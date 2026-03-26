@@ -82,7 +82,10 @@ function burnRateLabel(used: number, limit: number, resetAt: string | null): str
   const msLeft = new Date(resetAt).getTime() - Date.now();
   const daysLeft = msLeft / (1000 * 60 * 60 * 24);
   if (daysLeft <= 0) return 'Reset overdue';
-  const dailyRate = used / (30 - daysLeft); // rough
+  const elapsedDays = 30 - daysLeft;
+  // Guard against divide-by-zero if elapsed days is near zero
+  if (elapsedDays <= 0) return `On track — resets in ${Math.ceil(daysLeft)}d`;
+  const dailyRate = used / elapsedDays;
   if (dailyRate <= 0) return '';
   const daysToLimit = (limit - used) / dailyRate;
   if (daysToLimit < daysLeft) {
@@ -196,7 +199,7 @@ export function Analytics() {
     const totalRuns = completedRuns.length;
     const totalStages = completedRuns.reduce((sum, run) => sum + run.stages.length, 0);
     const totalDuration = completedRuns.reduce((sum, run) => sum + run.totalDurationMs, 0);
-    const totalCost = completedRuns.reduce((sum, run) => sum + run.totalCost, 0);
+    const totalCost = completedRuns.reduce((sum, run) => sum + (run.totalCost ?? 0), 0);
     return {
       totalRuns,
       totalStages,

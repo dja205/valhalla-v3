@@ -94,6 +94,11 @@ export const useStore = create<StoreState>((set, get) => ({
         set({
           projects,
           agents,
+          // Clear stale dashboard-specific state when falling back to partial data
+          activeRun: null,
+          completedRuns: [],
+          config: null,
+          limits: null,
           isLoading: false,
           lastRefreshed: new Date(),
           error: 'Dashboard unavailable — using partial data',

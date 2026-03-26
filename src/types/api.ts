@@ -45,7 +45,7 @@ export interface RunDetail {
   created: string;
   lastUpdated: string;
   metadata?: Record<string, unknown>;
-  totalCost: number;
+  totalCost: number | null;  // null when cost data unavailable
   totalDurationMs: number;
 }
 

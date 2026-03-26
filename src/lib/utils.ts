@@ -11,7 +11,8 @@ export function formatDuration(ms: number): string {
 }
 
 export function formatCost(cost: number | null | undefined): string {
-  if (cost == null || cost === 0) return '—';
+  if (cost === null || cost === undefined) return 'N/A';
+  if (cost === 0) return '$0.00';
   return `$${cost.toFixed(2)}`;
 }
 

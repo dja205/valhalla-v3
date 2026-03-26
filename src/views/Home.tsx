@@ -194,7 +194,26 @@ export function Home() {
   const backlogCount = projects.filter(
     p => p.status === 'awaiting_review' || p.runs.some(r => r.currentStage === 'request')
   ).length;
-  const activeCount = projects.filter(p => p.status === 'active').length;
+  
+  // Count projects actively in design phase
+  const designCount = projects.filter(p => {
+    if (p.status !== 'active') return false;
+    const currentRun = p.runs.find(r => r.runId === p.currentRun);
+    if (!currentRun?.currentStage) return false;
+    // Design stages: request, architecture, ux-design, spec
+    const designStages = ['request', 'architecture', 'ux-design', 'spec'];
+    return designStages.includes(currentRun.currentStage);
+  }).length;
+  
+  // Count projects actively in build phase
+  const buildCount = projects.filter(p => {
+    if (p.status !== 'active') return false;
+    const currentRun = p.runs.find(r => r.runId === p.currentRun);
+    if (!currentRun?.currentStage) return false;
+    // Build stages: tasks, implementation, review, qa, release
+    const buildStages = ['tasks', 'implementation', 'review', 'qa', 'release'];
+    return buildStages.includes(currentRun.currentStage);
+  }).length;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -276,8 +295,8 @@ export function Home() {
       <PipelineFlowBar
         currentPhase={getCurrentPhase()}
         backlogCount={backlogCount}
-        designCount={activeCount}
-        buildCount={0}
+        designCount={designCount}
+        buildCount={buildCount}
         completeCount={completedRuns.length}
       />
 

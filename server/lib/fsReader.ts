@@ -159,9 +159,11 @@ export async function readRunDetail(projectId: string, runId: string): Promise<R
     const stages = await readExecutionLog(projectId, runId);
     
     const totalDurationMs = stages.reduce((sum, s) => sum + (s.durationMs || 0), 0);
-    const totalCost = stages.reduce((sum, s) => {
-      return sum + (s.premiumRequests ? s.premiumRequests * 0.10 : 0);
-    }, 0);
+    // Check if ANY stage has premiumRequests data - if all are null, cost is unknown
+    const hasAnyPremiumData = stages.some(s => s.premiumRequests !== null && s.premiumRequests !== undefined);
+    const totalCost = hasAnyPremiumData
+      ? stages.reduce((sum, s) => sum + ((s.premiumRequests ?? 0) * 0.10), 0)
+      : null;  // null indicates unknown/unavailable cost data
     
     const result: RunDetail = {
       runId: runMeta.run_id,
