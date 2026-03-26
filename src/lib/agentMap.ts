@@ -1,3 +1,24 @@
+// Stage names for each agent in the pipeline
+export const STAGE_NAME_MAP: Record<string, string> = {
+  mimir: 'Architecture',
+  baldr: 'UX Design',
+  ratatoskr: 'System Map',
+  sleipnir: 'Capability Slicing',
+  freya: 'Discovery',
+  brokk: 'Issues',
+  sindri: 'Splitting',
+  heimdall: 'Planning QA',
+  ymir: 'Foundation',
+  modi: 'Implementation',
+  magni: 'Implementation',
+  tyr: 'Code Review',
+  valkyrie: 'Adversarial',
+  jormungandr: 'Integration',
+  fenrir: 'Resilience',
+  surtr: 'Release',
+  hel: 'Recovery',
+};
+
 export const AGENT_AVATAR_MAP: Record<string, string> = {
   loki: '/img/agents/loki.PNG',
   mimir: '/img/agents/mimir.PNG',
