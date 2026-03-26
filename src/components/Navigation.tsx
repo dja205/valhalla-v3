@@ -1,13 +1,16 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
 
-const navItems = [
+const allNavItems = [
   { path: '/', label: 'Home', icon: '⌂' },
   { path: '/backlog', label: 'Backlog', icon: '📋' },
   { path: '/pipeline', label: 'Pipeline', icon: '⬡' },
   { path: '/completed', label: 'Completed', icon: '✓' },
   { path: '/analytics', label: 'Analytics', icon: '📊' },
 ];
+
+// Mobile tab bar: 4 tabs only (Backlog accessible from Pipeline or direct URL)
+const mobileNavItems = allNavItems.filter(i => i.path !== '/backlog');
 
 export function Navigation() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -16,8 +19,8 @@ export function Navigation() {
     <>
       {/* Mobile bottom tab bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-bg-surface border-t border-bg-raised z-30">
-        <div className="flex justify-around h-full">
-          {navItems.map((item) => (
+        <div className="grid grid-cols-4 h-full">
+          {mobileNavItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -64,7 +67,7 @@ export function Navigation() {
         
         {/* Nav items */}
         <div className="flex-1 p-2 space-y-1">
-          {navItems.map((item) => (
+          {allNavItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}

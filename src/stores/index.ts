@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import type { 
-  ProjectSummary, 
-  RunDetail, 
-  AgentConfigResponse, 
+import type {
+  ProjectSummary,
+  RunDetail,
+  AgentConfigResponse,
   LimitsSnapshot,
-  DashboardData 
+  DashboardData,
+  AgentRuntimeStatus
 } from '@/types/api';
 
 interface StoreState {
@@ -13,11 +14,12 @@ interface StoreState {
   completedRuns: RunDetail[];
   config: AgentConfigResponse | null;
   limits: LimitsSnapshot | null;
+  agents: AgentRuntimeStatus[];
   isLoading: boolean;
   error: string | null;
   lastRefreshed: Date | null;
   isRefreshing: boolean;
-  
+
   fetchAll: () => Promise<void>;
   refresh: () => Promise<void>;
   startPolling: (intervalMs?: number) => void;
@@ -33,6 +35,7 @@ export const useStore = create<StoreState>((set, get) => ({
   completedRuns: [],
   config: null,
   limits: null,
+  agents: [],
   isLoading: false,
   error: null,
   lastRefreshed: null,
@@ -41,30 +44,62 @@ export const useStore = create<StoreState>((set, get) => ({
   fetchAll: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Use the dashboard endpoint for efficiency
+      // Primary: use the dashboard endpoint for efficiency
       const res = await fetch('/api/dashboard');
-      
+
       if (!res.ok) {
         throw new Error(`Failed to fetch dashboard: ${res.status}`);
       }
 
       const data: DashboardData = await res.json();
 
-      set({ 
+      set({
         projects: data.projects,
         activeRun: data.activeRun,
         completedRuns: data.completedRuns,
         config: data.config,
         limits: data.limits,
-        isLoading: false, 
-        lastRefreshed: new Date() 
+        isLoading: false,
+        lastRefreshed: new Date()
       });
+
+      // Fetch agents separately (non-blocking)
+      fetch('/api/agents')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then((agents: AgentRuntimeStatus[]) => set({ agents }))
+        .catch(() => { /* agents fetch is best-effort */ });
+
     } catch (error) {
       console.error('Dashboard fetch error:', error);
-      set({ 
-        error: error instanceof Error ? error.message : 'Unknown error', 
-        isLoading: false 
-      });
+
+      // Fallback: try individual endpoints
+      try {
+        const [projRes, agentsRes] = await Promise.allSettled([
+          fetch('/api/projects'),
+          fetch('/api/agents'),
+        ]);
+
+        const projects: ProjectSummary[] = projRes.status === 'fulfilled' && projRes.value.ok
+          ? await projRes.value.json()
+          : [];
+
+        const agents: AgentRuntimeStatus[] = agentsRes.status === 'fulfilled' && agentsRes.value.ok
+          ? await agentsRes.value.json()
+          : [];
+
+        set({
+          projects,
+          agents,
+          isLoading: false,
+          lastRefreshed: new Date(),
+          error: 'Dashboard unavailable — using partial data',
+        });
+      } catch {
+        set({
+          error: error instanceof Error ? error.message : 'Unknown error',
+          isLoading: false
+        });
+      }
     }
   },
 

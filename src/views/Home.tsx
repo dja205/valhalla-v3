@@ -12,6 +12,56 @@ import { DESIGN_TEAM, BUILD_TEAM } from '@/lib/agentMap';
 import { formatDuration, formatCost } from '@/lib/utils';
 import type { AgentStatus } from '@/types/api';
 
+const PIPELINE_STAGES = [
+  { key: 'request', abbr: 'req' },
+  { key: 'architecture', abbr: 'arch' },
+  { key: 'ux-design', abbr: 'ux' },
+  { key: 'spec', abbr: 'spec' },
+  { key: 'tasks', abbr: 'tasks' },
+  { key: 'implementation', abbr: 'impl' },
+  { key: 'review', abbr: 'review' },
+  { key: 'qa', abbr: 'qa' },
+  { key: 'release', abbr: 'rel' },
+] as const;
+
+function StagePipeline({ stagesCompleted, currentStage }: { stagesCompleted: string[]; currentStage: string | null }) {
+  const completedSet = new Set(stagesCompleted);
+
+  return (
+    <div className="mt-4 pt-4 border-t border-bg-raised overflow-x-auto">
+      <div className="flex flex-nowrap gap-3 min-w-max">
+        {PIPELINE_STAGES.map(({ key, abbr }, i) => {
+          const isDone = completedSet.has(key);
+          const isCurrent = currentStage === key;
+          return (
+            <div key={key} className="flex items-center gap-1.5">
+              {i > 0 && (
+                <div className={`w-4 h-px ${isDone ? 'bg-success' : 'bg-bg-raised'}`} />
+              )}
+              <div className="flex flex-col items-center gap-1">
+                {isDone ? (
+                  <span className="w-5 h-5 rounded-full bg-success flex items-center justify-center text-[10px] text-bg-base font-bold">
+                    ✓
+                  </span>
+                ) : isCurrent ? (
+                  <span className="w-5 h-5 rounded-full bg-accent-amber animate-pulse" />
+                ) : (
+                  <span className="w-5 h-5 rounded-full border border-text-muted" />
+                )}
+                <span className={`text-[10px] font-medium whitespace-nowrap ${
+                  isDone ? 'text-success' : isCurrent ? 'text-accent-amber' : 'text-text-muted'
+                }`}>
+                  {abbr}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function Home() {
   const { 
     projects, 
@@ -111,6 +161,15 @@ export function Home() {
               <div className="text-text-muted text-sm">
                 Current Stage: <span className="text-accent-amber font-medium capitalize">{activeRun.currentStage || 'Unknown'}</span>
               </div>
+              {/* Agent working */}
+              {(() => {
+                const inProgressStage = activeRun.stages.find(s => s.status === 'in_progress');
+                return inProgressStage ? (
+                  <div className="text-text-muted text-sm mt-1">
+                    Agent: <span className="text-accent-cyan font-medium capitalize">{inProgressStage.agent}</span>
+                  </div>
+                ) : null;
+              })()}
             </div>
             <div className="flex gap-6 text-right">
               <div>
@@ -123,6 +182,12 @@ export function Home() {
               </div>
             </div>
           </div>
+
+          {/* Stage Progress Indicator */}
+          <StagePipeline
+            stagesCompleted={activeRun.stagesCompleted}
+            currentStage={activeRun.currentStage}
+          />
         </div>
       ) : (
         <div className="bg-bg-surface rounded-lg p-6 border border-bg-raised">

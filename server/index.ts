@@ -3,6 +3,7 @@ import cors from 'cors';
 import projectsRouter from './routes/projects';
 import configRouter from './routes/config';
 import limitsRouter from './routes/limits';
+import agentsRouter from './routes/agents';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,6 +27,7 @@ app.get('/api/dashboard', async (req, res, next) => {
 app.use('/api/projects', projectsRouter);
 app.use('/api/config', configRouter);
 app.use('/api/limits', limitsRouter);
+app.use('/api/agents', agentsRouter);
 
 app.listen(PORT, () => {
   console.log(`🚀 Valhalla V3 server running on http://localhost:${PORT}`);
