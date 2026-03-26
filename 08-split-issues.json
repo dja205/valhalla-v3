@@ -1,0 +1,100 @@
+{
+  "assessment_summary": "Reviewed 5 L-sized issues for splitting potential. BC-06-C2 requires splitting due to distinct desktop vs mobile layout concerns. BC-07-C1 requires splitting due to multiple independent chart concerns. BC-05-C1, BC-05-C2, and BC-07-C2 should remain unsplit as each represents a cohesive, implementable scope.",
+  "items": [
+    {
+      "original_id": "BC-05-C1",
+      "original_title": "Pipeline view: Design Phase horizontal stage flow with job cards",
+      "split_needed": false,
+      "rationale": "Complex layout but unified concept. Horizontal stage flow with 8 Design stages can be implemented and reviewed in one PR. Pulsing animation is already separated into BC-05-C3. No multiple distinct components warrant separate PRs.",
+      "children": []
+    },
+    {
+      "original_id": "BC-05-C2",
+      "original_title": "Pipeline view: Build Phase horizontal stage flow with job cards",
+      "split_needed": false,
+      "rationale": "Mirrors BC-05-C1 structure and scope. Reuses JobCard component. Single PR can implement the Build Phase section with same pattern/structure as Design Phase. No blocking dependencies between the two phases.",
+      "children": []
+    },
+    {
+      "original_id": "BC-06-C2",
+      "original_title": "Completed view: full job detail overlay with two-column stage breakdown and artifact viewer",
+      "split_needed": true,
+      "rationale": "Merges three distinct concerns: (1) desktop two-column layout with accordion, (2) mobile tab layout variant, and (3) lazy artifact fetching with loading states. Desktop and mobile layouts are sufficiently different to warrant separate PRs. Artifact loading logic can be developed and tested independently.",
+      "children": [
+        {
+          "id": "BC-06-C2a",
+          "title": "Completed view: detail overlay desktop layout with accordion and artifact rendering",
+          "scope": [
+            "Full-screen overlay container with accessible close button",
+            "Two-column desktop layout (Design stages left, Build stages right)",
+            "Expandable accordion sections per stage with agent details",
+            "Lazy artifact fetch triggered on expand via BC-01-C2",
+            "Rendered artifact markdown with react-markdown and syntax highlighting",
+            "Summary footer row with cost/duration/token totals",
+            "Accessible focus trap and keyboard navigation"
+          ],
+          "estimated_effort": "M",
+          "dependencies": ["BC-06-C1", "BC-01-C2"]
+        },
+        {
+          "id": "BC-06-C2b",
+          "title": "Completed view: detail overlay mobile tab layout variant",
+          "scope": [
+            "Tab interface for mobile (Design | Build tabs)",
+            "Single-column layout below tab bar",
+            "Same accordion structure as desktop but stacked vertically",
+            "Reuse artifact rendering from BC-06-C2a",
+            "Responsive tab indicator and navigation",
+            "Functional at 375px viewport"
+          ],
+          "estimated_effort": "M",
+          "dependencies": ["BC-06-C2a"]
+        }
+      ]
+    },
+    {
+      "original_id": "BC-07-C1",
+      "original_title": "Analytics view: cost dashboard with time-series and breakdown charts",
+      "split_needed": true,
+      "rationale": "Combines four distinct chart types with different aggregation logic: time-series with granularity toggle (one concern) vs breakdown charts by project/agent/model (separate concern). Time-series and toggles can be built independently from breakdown analysis. Different data aggregation strategies merit separate implementation and review.",
+      "children": [
+        {
+          "id": "BC-07-C1a",
+          "title": "Analytics view: cost time-series chart with granularity toggle",
+          "scope": [
+            "Daily/weekly/monthly premium request consumption time-series chart",
+            "Time granularity toggle switching chart view",
+            "Data aggregation logic for each granularity (daily, weekly, monthly)",
+            "Clear zero/empty state when no cost data",
+            "Responsive at 375px mobile",
+            "Use recharts or equivalent lightweight charting library"
+          ],
+          "estimated_effort": "M",
+          "dependencies": ["BC-02-C1", "CC-01-C1"]
+        },
+        {
+          "id": "BC-07-C1b",
+          "title": "Analytics view: cost breakdown charts (project, agent, model tier)",
+          "scope": [
+            "Cost per project bar chart",
+            "Cost per agent bar chart",
+            "Cost per model tier (Opus/Sonnet/Haiku) breakdown chart",
+            "Data aggregation from stage-level premiumRequests",
+            "Sorting and labeling strategy",
+            "Clear empty/zero state when no cost data",
+            "Responsive at 375px mobile"
+          ],
+          "estimated_effort": "M",
+          "dependencies": ["BC-02-C1", "CC-01-C1"]
+        }
+      ]
+    },
+    {
+      "original_id": "BC-07-C2",
+      "original_title": "Analytics view: performance dashboard with agent durations and success rates",
+      "split_needed": false,
+      "rationale": "Cohesive performance analysis dashboard with four related chart types sharing the same data source (execution-log stage durations). Charts analyze different performance aspects but work together as a unified dashboard view. Can be implemented and reviewed in one PR.",
+      "children": []
+    }
+  ]
+}

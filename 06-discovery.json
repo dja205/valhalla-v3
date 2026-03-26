@@ -1,0 +1,64 @@
+[
+  {
+    "id": "D-01",
+    "question": "What status values does state.yaml actually use?",
+    "evidence_gathered": "Examined all state.yaml files across 9 projects: odinclaw-pipeline, yggdrasil-memory, decimal-jump, valhalla-v3, valhalla-v2, hello-world-test, valhalla, bifrost, 11plusgalaxy. Status values observed at project level and per-run level.",
+    "answer": "Four status values confirmed in use: 'active', 'awaiting_review', 'blocked', 'completed'. No 'backlog', 'in_progress', 'complete', or 'failed' values exist. Run-level statuses use the same set. Stage names (separate from status) are: request, architecture, ux-design, spec, tasks, implementation, review, qa, release, memory.",
+    "confidence": "high",
+    "impact_on_implementation": "Dashboard status badge rendering must map exactly these four values: active → in-progress indicator, awaiting_review → pending/waiting indicator, blocked → error/blocked indicator, completed → done indicator. No fallback for 'in_progress' or 'failed' needed.",
+    "recommended_action": "Use confirmed enum [active, awaiting_review, blocked, completed] for run status type. Map stage names separately for pipeline view ordering."
+  },
+  {
+    "id": "D-02",
+    "question": "What stage names appear in execution-log.json? How do we map to Design vs Build phase?",
+    "evidence_gathered": "Aggregated all execution-log.json files across all projects. The 'stage' field in execution-log entries uses agent names, not pipeline stage names. Observed agent-as-stage values: baldr, brokk, heimdall, loki, mimir, sindri, thor, tyr. State.yaml stages_completed uses pipeline stage names: request, architecture, ux-design, spec, tasks, implementation, review, qa, release, memory.",
+    "answer": "Execution-log.json uses agent names as stage identifiers (mimir, baldr, loki, brokk, sindri, heimdall for Design; thor, tyr for Build observed so far). State.yaml stages_completed uses workflow phase names. The two systems use different identifiers for the same work. Design phase agents: loki, mimir, baldr, ratatoskr, sleipnir, freya, brokk, sindri, heimdall. Build phase agents: thor, ymir, modi, magni, tyr, valkyrie, jormungandr, fenrir, surtr, hel.",
+    "confidence": "high",
+    "impact_on_implementation": "The pipeline view must reconcile two naming systems: execution-log entries (agent name) and state.yaml stages_completed (phase name). The dashboard needs a mapping table from agent names to their phase (Design/Build) and from state.yaml stage names to display labels. The API layer must join both sources to produce a unified pipeline view.",
+    "recommended_action": "Define a static agent-to-phase mapping in the API layer based on odinclaw.config.yaml agent roster. Map state.yaml stage names to display order separately. Document both mappings explicitly in the data layer."
+  },
+  {
+    "id": "D-03",
+    "question": "Is premiumRequests always numeric? Can it be fractional or null?",
+    "evidence_gathered": "Examined all execution-log.json files across all projects using aggregation script. Checked every entry's premiumRequests field value.",
+    "answer": "premiumRequests is always null in all observed execution-log.json files across all projects and all runs. No numeric, fractional, or non-null values were ever observed. This field appears to be reserved or not yet populated by the pipeline.",
+    "confidence": "high",
+    "impact_on_implementation": "The dashboard must handle null gracefully for this field — display a dash or 'N/A' rather than 0 or an error. Do not assume it will ever be numeric based on current data. If it becomes numeric in future, the field should be treated as nullable number (integer or float).",
+    "recommended_action": "Type premiumRequests as number | null. Display '—' when null. Do not block rendering or calculations on this field. Add a note in data types that the field is currently always null and may be populated in future pipeline versions."
+  },
+  {
+    "id": "D-04",
+    "question": "Does the 40-build/ directory convention exist, or are run artifacts always single flat files?",
+    "evidence_gathered": "Searched all project run directories for '40-build' subdirectories. Found 40-build/ in: yggdrasil-memory/runs/2026-03-20-initial-build, decimal-jump/runs/2026-03-23-operation-checkboxes, decimal-jump/runs/2026-03-22-decimal-jump-v2, valhalla/runs/2026-03-20-initial-build, valhalla/runs/2026-03-21-log-tail, valhalla/runs/2026-03-20-logo-prominence, valhalla/runs/2026-03-21-card-details-archive, valhalla/runs/2026-03-20-board-enhancements. However, all valhalla-v2 runs use flat artifact files only (00-request.md, 10-architecture.md, 20-spec.md, 30-tasks.md, 50-implementation-summary.md, 60-review.md, 70-qa.md, 80-release.md, 80-memory.md, escalation.json, execution-log.json). The 40-build/ directories were empty when examined.",
+    "confidence": "high",
+    "impact_on_implementation": "The artifact file convention has evolved: older projects used a 40-build/ subdirectory (now always empty), while current projects (valhalla-v2 and valhalla-v3) use numbered flat files with no subdirectory. The dashboard should read flat artifact files at run root, not look inside 40-build/. The artifact list is: 00-request.md, 10-architecture.md, 20-spec.md, 30-tasks.md, 50-implementation-summary.md, 60-review.md, 70-qa.md, 80-release.md, 80-memory.md, escalation.json, execution-log.json.",
+    "recommended_action": "Read artifacts as flat numbered files at run root. The 40-build/ convention is obsolete for valhalla-v2 style projects. Do not implement subdirectory traversal for build artifacts."
+  },
+  {
+    "id": "D-05",
+    "question": "Is there a thresholds config in odinclaw.config.yaml for limits?",
+    "evidence_gathered": "Read full odinclaw.config.yaml at /Users/openclawsvc/.openclaw/workspace/odinclaw/odinclaw.config.yaml.",
+    "answer": "Yes. Thresholds exist under the 'escalation.thresholds' key: max_tasks_before_escalation: 20, max_packages_before_escalation: 4, fix_cycles_before_escalation: 2, gate_retries_before_escalation: 2. There are no token limits, rate limits, or cost thresholds defined. The escalation.notify method is 'system_event'. Global defaults include timeout_ms: 900000 (15 min) and per-agent timeout_ms overrides (1200000 = 20 min for most, 300000 = 5 min for yggdrasil).",
+    "confidence": "high",
+    "impact_on_implementation": "The dashboard can surface escalation thresholds as context. If displaying task counts or gate retry counts, these config values can inform warning/alert thresholds in the UI. Timeout values per agent are available and could drive progress indicators. No token budget or cost cap fields exist to display.",
+    "recommended_action": "Expose escalation thresholds via the config API endpoint. Use max_tasks_before_escalation (20) and fix_cycles_before_escalation (2) as reference values for UI warning states. Per-agent timeout_ms is available for progress bar max duration if desired."
+  },
+  {
+    "id": "D-06",
+    "question": "Do all agent avatar images exist? Is the ratatoksr.PNG typo confirmed?",
+    "evidence_gathered": "Listed all files in /Users/openclawsvc/.openclaw/workspace/odinclaw/portfolio/projects/valhalla-v3/src/public/img/agents/. Full file list: baldr.PNG, brokk.PNG, fenrir.PNG, freya.PNG, heimdall.PNG, hel.PNG, jormungandr.PNG, loki.PNG, magni.PNG, mimir.PNG, modi.PNG, odin.PNG, ratatoksr.PNG, sindri.PNG, sleipnir.PNG, surtr.PNG, thor.PNG, tyr.PNG, valkyrie.PNG, yggdrasil.PNG, yggdrasil2.PNG, ymir.PNG.",
+    "answer": "The ratatoksr.PNG typo is confirmed — the file is named 'ratatoksr.PNG' (missing the second 's'), not 'ratatoskr.PNG'. All other agents have avatars. The correct agent name is 'ratatoskr' per the config. Total: 22 image files present. All active pipeline agents have avatars. The 'yggdrasil2.PNG' is an alternate/variant image with no corresponding agent name.",
+    "confidence": "high",
+    "impact_on_implementation": "Any code referencing '/img/agents/ratatoskr.PNG' will 404. Must use the typo filename 'ratatoksr.PNG' until the file is renamed. This is a breaking inconsistency — either rename the file (preferred) or add a special-case mapping in the image lookup function. Renaming the file is lower risk.",
+    "recommended_action": "Rename ratatoksr.PNG to ratatoskr.PNG as part of the initial scaffolding task to align filename with agent name. Update any existing references if valhalla-v2 code is being ported. Add a comment noting the correction was intentional."
+  },
+  {
+    "id": "D-07",
+    "question": "Is there any existing Valhalla V2 source code to reference for UI patterns?",
+    "evidence_gathered": "Examined /Users/openclawsvc/.openclaw/workspace/odinclaw/portfolio/projects/valhalla-v2/src/. Full tech stack confirmed present: index.html, package.json, vite.config.ts, tailwind.config.ts, postcss.config.cjs, tsconfig.json, tsconfig.node.json, playwright.config.ts, src/ (React components), server/ (API layer), public/ (static assets), dist/ (built output), tests/ (Playwright E2E), node_modules/.",
+    "answer": "Yes. Valhalla V2 is a fully built React + TypeScript + Vite + Tailwind application with a server-side API layer and Playwright tests. It is the direct predecessor to V3 and contains solved implementations of: agent status display, pipeline view, execution-log parsing, avatar image loading, mobile-first layout, real-time polling, and tab navigation. It is the primary reference implementation for V3.",
+    "confidence": "high",
+    "impact_on_implementation": "V3 should use V2 as a direct reference, not start from scratch. Key patterns to extract: API route structure from server/, data parsing logic for execution-log.json and state.yaml, component architecture from src/, Tailwind class conventions, Playwright test patterns. V3 is likely an evolution (new features + real-time) rather than a full rewrite.",
+    "recommended_action": "Before implementing V3 components, read V2 source in server/ and src/ to identify reusable patterns. Document which V2 patterns V3 will inherit vs replace. Treat V2 as the baseline and define V3 delta explicitly."
+  }
+]

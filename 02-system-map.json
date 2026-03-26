@@ -1,0 +1,387 @@
+{
+  "request_summary": "Build Valhalla V3 — a completely rebuilt real-time dashboard for the Norse Agent System v2 pipeline. Features a multi-view SPA (Home, Backlog, Pipeline, Completed, Analytics) backed by a Node.js/Express API reading portfolio filesystem data. Dark theme, mobile-first, auto-refresh every 10s.",
+  "decomposition_level": "system_map",
+  "items": [
+    {
+      "id": "BC-01",
+      "title": "Data Ingestion and API Layer",
+      "classification": "bounded_context",
+      "issue_type": "epic",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "A stable Node.js/Express API that reads, parses, and serves live portfolio filesystem data (state.yaml, execution-log.json, artifact markdown, odinclaw.config.yaml) to the frontend with appropriate polling and caching semantics.",
+      "scope": [
+        "Express API server setup and routing",
+        "Filesystem reader for state.yaml and execution-log.json",
+        "Artifact markdown file resolution per run",
+        "odinclaw.config.yaml parsing for agent assignments",
+        "Response schema definition and serialisation",
+        "Error handling for missing or malformed files"
+      ],
+      "non_goals": [
+        "Frontend rendering",
+        "Persistent database storage",
+        "Authentication or authorisation",
+        "Writing to the filesystem"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": [],
+      "labels": ["backend", "api", "epic"],
+      "assumptions": [
+        "Filesystem layout and file formats are stable enough to define a response schema without a discovery spike",
+        "No authentication is required for the API in v3",
+        "The API is local-only and not exposed publicly"
+      ],
+      "split_rationale": "Isolated to backend concerns; no frontend work is included. File parsing details will be decomposed in child issues.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": ["Scope is bounded to read-only filesystem access and HTTP serialisation"]
+      }
+    },
+    {
+      "id": "BC-02",
+      "title": "Real-Time State Sync and Client Store",
+      "classification": "bounded_context",
+      "issue_type": "epic",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "A Zustand-based client store that polls the API every 10 seconds, normalises responses, and exposes reactive slices consumed by all views — ensuring the UI always reflects current pipeline state.",
+      "scope": [
+        "Zustand store architecture and slice definitions",
+        "10-second auto-refresh polling loop",
+        "Response normalisation and diff/merge logic",
+        "Loading, error, and stale-data states",
+        "Manual refresh trigger (pull-to-refresh support hook)"
+      ],
+      "non_goals": [
+        "WebSocket or SSE infrastructure",
+        "Persistent client-side caching beyond in-memory store",
+        "View-layer rendering"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": ["BC-01"],
+      "labels": ["frontend", "state-management", "epic"],
+      "assumptions": [
+        "Polling at 10s intervals is sufficient; WebSocket is out of scope for v3",
+        "All views share a single Zustand store"
+      ],
+      "split_rationale": "Separated from views so store architecture can stabilise before view-specific slices are built.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": ["Bounded to client store wiring; no UI rendering included"]
+      }
+    },
+    {
+      "id": "BC-03",
+      "title": "Dashboard Home View",
+      "classification": "bounded_context",
+      "issue_type": "epic",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "Users can see the currently active job at a glance via a hero card, inspect Design and Build team panels, understand pipeline flow position, and read a cost summary — all from a single home screen.",
+      "scope": [
+        "Active job hero card component",
+        "Design team panel (Loki-led agents)",
+        "Build team panel (Thor-led agents)",
+        "Pipeline flow visualisation (summary/mini)",
+        "Cost summary bar",
+        "Layout and responsive grid"
+      ],
+      "non_goals": [
+        "Full pipeline stage animation (belongs to Pipeline view)",
+        "Historical data display",
+        "Analytics charts"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": ["BC-02"],
+      "labels": ["frontend", "dashboard", "epic"],
+      "assumptions": [
+        "Home view is the default landing route",
+        "Agent team membership is derived from odinclaw.config.yaml"
+      ],
+      "split_rationale": "Scoped to a single view; hero card and team panels are substantial but belong to the same user context.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": ["Multiple components but single view boundary and single ownership"]
+      }
+    },
+    {
+      "id": "BC-04",
+      "title": "Backlog View",
+      "classification": "bounded_context",
+      "issue_type": "epic",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "Users can browse all queued jobs, expand each job to read its full markdown description, and manually refresh the list — giving full visibility into pending work before it enters the pipeline.",
+      "scope": [
+        "Queued jobs list with sort/order",
+        "Expandable row with rendered markdown",
+        "Pull-to-refresh gesture and button",
+        "Empty and loading states"
+      ],
+      "non_goals": [
+        "Job creation or editing",
+        "Drag-to-reorder queue",
+        "Completed or in-progress jobs (separate views)"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": ["BC-02"],
+      "labels": ["frontend", "backlog", "epic"],
+      "assumptions": [
+        "Queued jobs are identified by status in state.yaml",
+        "Markdown rendering uses an existing library (e.g. react-markdown)"
+      ],
+      "split_rationale": "Small, self-contained view; unlikely to require multiple owners.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": ["Single view with limited interaction surface"]
+      }
+    },
+    {
+      "id": "BC-05",
+      "title": "Pipeline View",
+      "classification": "bounded_context",
+      "issue_type": "epic",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "Users can watch a live two-phase (Design / Build) horizontal stage flow with animated job transitions, pulsing active stages, agent avatars, live duration counters, and running cost — making the in-flight execution state immediately legible.",
+      "scope": [
+        "Two-phase horizontal stage flow layout",
+        "Stage card with agent avatar, duration, running cost",
+        "Animated job transitions between stages (Framer Motion)",
+        "Pulsing active stage indicator",
+        "Job card component shared with other views"
+      ],
+      "non_goals": [
+        "Historical completed runs",
+        "Editing or cancelling jobs",
+        "Analytics aggregation"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": ["BC-02", "CC-01"],
+      "labels": ["frontend", "pipeline", "animation", "epic"],
+      "assumptions": [
+        "Design phase = Loki-led agents, Build phase = Thor-led agents",
+        "Stage order is deterministic and defined in odinclaw.config.yaml or state.yaml",
+        "Framer Motion is the sole animation library"
+      ],
+      "split_rationale": "Animation complexity and live data demands make this a distinct ownership boundary from other views.",
+      "size_assessment": {
+        "tshirt": "XL",
+        "is_too_large": true,
+        "reasons": [
+          "Animation system, live data binding, and multi-phase layout are each substantial",
+          "Likely to span multiple PRs; child decomposition required"
+        ]
+      }
+    },
+    {
+      "id": "BC-06",
+      "title": "Completed Jobs View",
+      "classification": "bounded_context",
+      "issue_type": "epic",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "Users can browse all completed job runs with full cost and duration breakdowns, and open a two-column stage detail overlay that renders artifact markdown — enabling post-run review and audit.",
+      "scope": [
+        "Completed jobs history list",
+        "Cost and duration summary per job",
+        "Two-column stage detail overlay",
+        "Rendered artifact markdown per stage",
+        "Overlay open/close transitions"
+      ],
+      "non_goals": [
+        "Editing or deleting completed runs",
+        "Exporting data",
+        "Analytics aggregation (separate view)"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": ["BC-01", "BC-02"],
+      "labels": ["frontend", "history", "epic"],
+      "assumptions": [
+        "Artifact markdown files are resolved from execution-log.json run paths",
+        "Overlay is a modal-style panel, not a new route"
+      ],
+      "split_rationale": "Distinct user journey (post-run review) from in-flight pipeline observation.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": ["Two-column overlay adds complexity but stays within one view boundary"]
+      }
+    },
+    {
+      "id": "BC-07",
+      "title": "Analytics View",
+      "classification": "bounded_context",
+      "issue_type": "epic",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "Users can assess system cost and performance trends over time via recharts visualisations, and understand budget exposure through a limits tracker with burn rate projection.",
+      "scope": [
+        "Cost over time chart",
+        "Performance (duration) chart",
+        "Limits tracker component",
+        "Burn rate projection calculation",
+        "Chart responsiveness and dark-theme styling"
+      ],
+      "non_goals": [
+        "Real-time per-job cost display (Pipeline view concern)",
+        "Exporting chart data",
+        "Configuring limits from the UI"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": ["BC-01", "BC-02"],
+      "labels": ["frontend", "analytics", "epic"],
+      "assumptions": [
+        "Historical cost data is derivable from execution-log.json",
+        "Limits are sourced from odinclaw.config.yaml",
+        "recharts is the sole charting library"
+      ],
+      "split_rationale": "Aggregation logic and chart composition are analytically distinct from operational views.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": ["Bounded to read-only aggregation and visualisation"]
+      }
+    },
+    {
+      "id": "CC-01",
+      "title": "Design System and Shared UI Components",
+      "classification": "cross_cutting",
+      "issue_type": "epic",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "A consistent, dark-themed, mobile-first component library (Tailwind + Framer Motion primitives) shared across all views — ensuring visual coherence and reducing per-view rework.",
+      "scope": [
+        "Tailwind dark theme configuration and CSS variables",
+        "Shared layout primitives (grid, card, overlay, badge)",
+        "Agent avatar component",
+        "Job card component",
+        "Markdown renderer wrapper",
+        "Animation tokens and reusable Framer Motion variants"
+      ],
+      "non_goals": [
+        "View-specific composite components",
+        "Storybook or visual regression testing setup"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": [],
+      "labels": ["frontend", "design-system", "cross-cutting", "epic"],
+      "assumptions": [
+        "Tailwind CSS v3 is the styling foundation",
+        "Framer Motion variants are centralised to avoid duplication",
+        "No external component library (e.g. shadcn) is mandated"
+      ],
+      "split_rationale": "Cross-cutting; consumed by all bounded context views. Must be established early to unblock parallel view development.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": ["Scope is limited to primitives; view-specific composition lives in each BC"]
+      }
+    },
+    {
+      "id": "CC-02",
+      "title": "Application Shell, Routing, and Navigation",
+      "classification": "cross_cutting",
+      "issue_type": "epic",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "A functional SPA shell with client-side routing between all five views, persistent navigation, and global error/loading boundary — enabling independent view development and coherent user traversal.",
+      "scope": [
+        "Vite + React 18 project scaffold",
+        "React Router (or equivalent) route definitions",
+        "Persistent bottom/side navigation component",
+        "Global error boundary",
+        "Global loading state indicator",
+        "Environment configuration (API base URL, refresh interval)"
+      ],
+      "non_goals": [
+        "View content implementation",
+        "Auth-gated routes"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": ["CC-01"],
+      "labels": ["frontend", "routing", "cross-cutting", "epic"],
+      "assumptions": [
+        "Single-page application with client-side routing only",
+        "React Router v6 is used",
+        "Five named routes: /, /backlog, /pipeline, /completed, /analytics"
+      ],
+      "split_rationale": "Shell and routing are infrastructure shared by all views; isolating them prevents coupling.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": ["Scaffold and routing setup is well-scoped"]
+      }
+    },
+    {
+      "id": "INT-01",
+      "title": "API–Frontend Contract and Integration",
+      "classification": "integration",
+      "issue_type": "integration",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "API response shapes and TypeScript types are agreed and co-evolved between the API layer and the client store so that all views bind to stable, typed data without runtime shape mismatches.",
+      "scope": [
+        "Shared TypeScript type definitions for all API responses",
+        "OpenAPI or JSON Schema for the Express endpoints",
+        "Contract validation on the client (runtime or compile-time)",
+        "Versioning strategy for breaking changes"
+      ],
+      "non_goals": [
+        "Full API implementation (BC-01)",
+        "Store slice implementation (BC-02)"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": ["BC-01", "BC-02"],
+      "labels": ["integration", "api-contract", "epic"],
+      "assumptions": [
+        "Types will be maintained in a shared types package or directory within the monorepo",
+        "No code generation toolchain is mandated initially"
+      ],
+      "split_rationale": "Integration seam between backend and frontend; neither BC owns the contract definition alone.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": ["Contract definition is bounded and parallelisable with implementation"]
+      }
+    },
+    {
+      "id": "DISC-01",
+      "title": "Filesystem Data Model Discovery",
+      "classification": "discovery_needed",
+      "issue_type": "discovery",
+      "level": "parent",
+      "parent_id": null,
+      "outcome": "The exact schema of state.yaml, execution-log.json, and artifact markdown directory structure is documented and validated so that BC-01 API design and INT-01 contract definition proceed without guessing.",
+      "scope": [
+        "Audit of current state.yaml fields and lifecycle statuses",
+        "Audit of execution-log.json structure per run",
+        "Artifact markdown file naming conventions and path resolution",
+        "odinclaw.config.yaml agent assignment fields",
+        "Identification of any missing data needed by Analytics view (BC-07)"
+      ],
+      "non_goals": [
+        "Changing the filesystem format",
+        "API implementation"
+      ],
+      "acceptance_criteria": [],
+      "dependencies": [],
+      "labels": ["discovery", "data-model"],
+      "assumptions": [
+        "Files are accessible in the development environment during discovery",
+        "Discovery can be completed before API implementation begins"
+      ],
+      "split_rationale": "Ambiguity in data sources blocks accurate API and contract design; discovery must precede both.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": ["Bounded investigation; output is a schema document, not implementation"]
+      }
+    }
+  ]
+}

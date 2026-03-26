@@ -1,0 +1,1012 @@
+{
+  "request_summary": "Emit GitHub-ready issue drafts for the Valhalla V3 real-time agent pipeline dashboard. One issue per capability slice, grouped in logical delivery order.",
+  "decomposition_level": "issue_drafts",
+  "milestone": "valhalla-v3-mvp",
+  "delivery_order": [
+    "DISC-01-C1",
+    "CC-01-C1",
+    "CC-02-C1",
+    "INT-01-C1",
+    "BC-01-C1",
+    "BC-01-C2",
+    "BC-01-C3",
+    "BC-01-C4",
+    "BC-02-C1",
+    "BC-03-C1",
+    "BC-03-C2",
+    "BC-03-C3",
+    "BC-04-C1",
+    "BC-05-C1",
+    "BC-05-C2",
+    "BC-05-C3",
+    "BC-06-C1",
+    "BC-06-C2a",
+    "BC-06-C2b",
+    "BC-07-C1a",
+    "BC-07-C1b",
+    "BC-07-C2",
+    "BC-07-C3"
+  ],
+  "items": [
+    {
+      "id": "DISC-01-C1",
+      "title": "Discovery: confirm state.yaml schema, execution-log.json schema, and stage-to-phase mapping",
+      "classification": "discovery_needed",
+      "issue_type": "discovery",
+      "level": "leaf",
+      "parent_id": "DISC-01",
+      "outcome": "All data model unknowns are resolved before BC-01 and INT-01 implementation begins.",
+      "scope": [
+        "Enumerate all status values used in state.yaml across existing projects",
+        "Confirm execution-log.json schema: field names, nullability, stage name conventions",
+        "Determine how design phases vs build phases are identified from stage names",
+        "Confirm premiumRequests field: always present, fractional values, null handling",
+        "Check if 40-build/ directory convention is used or if artifacts are always single files"
+      ],
+      "non_goals": [
+        "Changing the data format",
+        "Back-filling missing data"
+      ],
+      "acceptance_criteria": [
+        "Status values confirmed: active, awaiting_review, blocked, completed",
+        "execution-log.json schema annotated with field types and nullability",
+        "Design/Build phase derivation strategy documented with agent-name-to-phase mapping table",
+        "premiumRequests semantics confirmed: number | null, display as dash when null",
+        "Artifact convention confirmed: flat numbered files at run root, 40-build/ is obsolete"
+      ],
+      "dependencies": [],
+      "labels": [
+        "discovery",
+        "data-model",
+        "blocking"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "S",
+      "assumptions": [],
+      "split_rationale": "Discovery must complete before any BC-01 or INT-01 work begins.",
+      "size_assessment": {
+        "tshirt": "S",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThis discovery task validates the filesystem data model before any implementation work on the API layer (BC-01) or shared types (INT-01) begins.\n\n## Key Findings (from prior discovery run)\n\n- **Status values**: `active`, `awaiting_review`, `blocked`, `completed` only\n- **premiumRequests**: Always `null` in all observed data -- type as `number | null`, display as `--` when null\n- **ratatoksr.PNG typo**: Confirmed -- rename to `ratatoskr.PNG` in CC-01-C1\n- **40-build/ convention**: Obsolete for valhalla-v2 style projects -- read flat numbered files at run root\n- **Agent-to-phase mapping**: execution-log uses agent names; state.yaml uses phase names -- a mapping table is required in the API layer\n- **V2 reference**: `valhalla-v2/src/` is a fully built React+TS+Vite+Tailwind app and is the primary reference for V3\n\n## Acceptance Criteria\n\n- [ ] Status values documented: `active`, `awaiting_review`, `blocked`, `completed`\n- [ ] execution-log.json schema annotated with field types and nullability\n- [ ] Design/Build phase derivation strategy documented\n- [ ] `premiumRequests` semantics confirmed: `number | null`, treat null as 0 for cost calculations\n- [ ] Artifact path convention confirmed: flat numbered `.md` files at run root\n\n## Technical Notes\n\n- All downstream issues (BC-01-C1, INT-01-C1) are blocked on this\n- Design team agents: `loki, mimir, baldr, ratatoskr, sleipnir, freya, heimdall, brokk, sindri`\n- Build team agents: `thor, ymir, modi, magni, tyr, valkyrie, jormungandr, fenrir, surtr, hel`\n- Cross-cutting: `odin, yggdrasil`"
+    },
+    {
+      "id": "CC-01-C1",
+      "title": "Design system: shared component library (tokens, AgentCard, JobCard, StageChip, CostBar, AgentAvatar)",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "CC-01",
+      "outcome": "All views built from consistent, reusable components with the Valhalla dark theme.",
+      "scope": [
+        "Tailwind config: dark theme tokens (colors, spacing, glow effects)",
+        "AgentCard: avatar, name, model badge, status pill (idle/working/blocked)",
+        "JobCard: title, issue#, project, agent, duration, cost, pulse animation",
+        "StageChip: stage name, status indicator",
+        "CostBar: progress bar with labels",
+        "AgentAvatar: maps agent name to correct image from public/img/agents/",
+        "Rename ratatoksr.PNG to ratatoskr.PNG to fix known filename typo",
+        "Centralise Framer Motion animation variants in src/lib/motion.ts"
+      ],
+      "non_goals": [
+        "View-level layout components",
+        "Light mode theme",
+        "Storybook component catalogue (MVP deferred)"
+      ],
+      "acceptance_criteria": [
+        "AgentAvatar correctly maps all 21 agents to their PNG files with no 404s",
+        "ratatoskr.PNG filename typo corrected and all references updated",
+        "Dark theme tokens applied consistently across all primitives",
+        "Pulsing glow animation works on JobCard via Framer Motion",
+        "All components fully typed with TypeScript"
+      ],
+      "dependencies": [],
+      "labels": [
+        "frontend",
+        "design-system",
+        "foundation"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "Avatar files exist in public/img/agents/ -- 22 files confirmed including yggdrasil2.PNG",
+        "ratatoksr.PNG typo is the only filename inconsistency"
+      ],
+      "split_rationale": "Design system must exist before any view work can begin.",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe shared design system provides foundational components and Tailwind dark theme tokens used by every view. Must be implemented before view-level work begins. V2 (`valhalla-v2/src/`) contains existing component patterns to reference.\n\n**Known issue:** `public/img/agents/ratatoksr.PNG` has a typo (missing second s). Must be renamed to `ratatoskr.PNG` in this issue to prevent 404s in `AgentAvatar`.\n\n## Acceptance Criteria\n\n- [ ] `AgentAvatar` maps all 21 agent names to correct PNG files with no 404s after renaming\n- [ ] `ratatoksr.PNG` renamed to `ratatoskr.PNG` and all code references updated\n- [ ] Tailwind dark theme tokens configured in `tailwind.config.ts`\n- [ ] Pulsing glow animation on `JobCard` using Framer Motion (variant in `src/lib/motion.ts`)\n- [ ] All primitives fully typed: `AgentCard`, `JobCard`, `StageChip`, `CostBar`, `AgentAvatar`\n\n## Technical Notes\n\n- Reference V2 component patterns; V3 evolves rather than rewrites\n- Animation variants centralised in `src/lib/motion.ts` -- no inline variant definitions in view components\n- No external component library (no shadcn, no MUI) per architecture decision AD-06\n- `yggdrasil2.PNG` exists as alternate image -- document intended use or leave for later"
+    },
+    {
+      "id": "CC-02-C1",
+      "title": "Application shell: routing, navigation, and mobile tab bar",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "CC-02",
+      "outcome": "Users can navigate between all 5 views via desktop sidebar and mobile tab bar.",
+      "scope": [
+        "Vite + React 18 + TypeScript project root scaffold",
+        "React Router v6 with routes: /, /backlog, /pipeline, /completed, /analytics",
+        "Desktop: left sidebar navigation with icons and labels",
+        "Mobile: bottom tab bar",
+        "Active route highlighted in nav",
+        "Page transitions (fade via Framer Motion)",
+        "Global error boundary and loading indicator"
+      ],
+      "non_goals": [
+        "Authentication or login flow",
+        "Deep-linking to specific jobs (deferred)",
+        "Server-side rendering"
+      ],
+      "acceptance_criteria": [
+        "All 5 routes resolve to correct stub view components",
+        "Desktop sidebar highlights active route",
+        "Mobile bottom tab bar functional at 375px viewport",
+        "Page fade transition smooth on navigation",
+        "Global error boundary renders graceful fallback on uncaught errors"
+      ],
+      "dependencies": [
+        "CC-01-C1"
+      ],
+      "labels": [
+        "frontend",
+        "shell",
+        "navigation"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "No authentication required -- local-only tool per architecture constraints"
+      ],
+      "split_rationale": "Shell and navigation are prerequisite to all view work.",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe application shell scaffolds the Vite+React+TypeScript project, registers all 5 routes, and provides persistent navigation chrome. Views can be stubs initially and filled in by subsequent issues.\n\n## Acceptance Criteria\n\n- [ ] All 5 routes (`/`, `/backlog`, `/pipeline`, `/completed`, `/analytics`) resolve to view components\n- [ ] Desktop sidebar highlights active route with icon and label\n- [ ] Mobile bottom tab bar renders and is functional at 375px viewport\n- [ ] Fade page transition on route change\n- [ ] Global error boundary renders user-friendly fallback on uncaught errors\n\n## Technical Notes\n\n- Reference V2 routing and layout at `valhalla-v2/src/`\n- React Router v6 `<Outlet>` pattern for nested layout\n- Animation variants from `src/lib/motion.ts` (defined in CC-01-C1)\n- Use env var `VITE_API_BASE_URL` defaulting to `http://localhost:3001`\n- No auth, no guards required for MVP"
+    },
+    {
+      "id": "INT-01-C1",
+      "title": "API-Frontend contract: shared TypeScript types for all API response shapes",
+      "classification": "integration",
+      "issue_type": "integration",
+      "level": "leaf",
+      "parent_id": "INT-01",
+      "outcome": "Frontend and backend share a single source of truth for all API response shapes.",
+      "scope": [
+        "src/types/api.ts defining ProjectSummary, RunDetail, RunStageEntry, AgentConfig, LimitsSnapshot, CostSummary",
+        "Backend serialises responses to match these types",
+        "Frontend normaliser validates/transforms API responses to store types"
+      ],
+      "non_goals": [
+        "Code generation from OpenAPI (deferred)",
+        "Runtime validation library (manual types sufficient for MVP)"
+      ],
+      "acceptance_criteria": [
+        "All API response shapes defined in src/types/api.ts",
+        "Backend imports from shared file -- no duplicate shape definitions",
+        "Frontend store normaliser imports from same shared file",
+        "RunStageEntry.premiumRequests typed as number | null",
+        "Status typed as active | awaiting_review | blocked | completed"
+      ],
+      "dependencies": [
+        "DISC-01-C1"
+      ],
+      "labels": [
+        "integration",
+        "types",
+        "backend",
+        "frontend"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "S",
+      "assumptions": [
+        "Monorepo layout: API server and frontend SPA co-located so src/types/ importable by both"
+      ],
+      "split_rationale": "Shared types are an integration seam that both backend and frontend depend on.",
+      "size_assessment": {
+        "tshirt": "S",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe highest-risk seam is the API response shape contract. TypeScript types must be co-owned in `src/types/api.ts` and imported by both the API serialiser and client-side normaliser to prevent shape drift.\n\n## Acceptance Criteria\n\n- [ ] `src/types/api.ts` defines: `ProjectSummary`, `RunDetail`, `RunStageEntry`, `AgentConfig`, `LimitsSnapshot`, `CostSummary`\n- [ ] `RunStageEntry.premiumRequests` typed as `number | null`\n- [ ] Status typed as `'active' | 'awaiting_review' | 'blocked' | 'completed'` (confirmed by DISC-01-C1)\n- [ ] Backend imports from shared types file -- no duplicate definitions\n- [ ] Frontend store normaliser imports from same shared file\n\n## Technical Notes\n\n```typescript\ntype ProjectStatus = 'active' | 'awaiting_review' | 'blocked' | 'completed';\ninterface RunStageEntry {\n  stage: string; agent: string; model: string; provider: string;\n  durationMs: number; premiumRequests: number | null;\n  changedFiles: string[]; summaryExcerpt: string;\n}\n```\n\n- Cost calc: `(premiumRequests ?? 0) * 0.10` per stage\n- `designTeam` and `buildTeam` pre-derived server-side -- frontend must not encode this logic"
+    },
+    {
+      "id": "BC-01-C1",
+      "title": "Backend: filesystem reader for projects, runs, state.yaml and execution-log.json",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-01",
+      "outcome": "Backend can enumerate all projects and runs, reading status and stage data from filesystem.",
+      "scope": [
+        "Recursive scan of ~/odinclaw/portfolio/projects/",
+        "Parse state.yaml per project (runs list, status, current_stage)",
+        "Parse execution-log.json per run (stages, agent, model, duration, premiumRequests, tokens)",
+        "GET /api/projects and GET /api/projects/:id endpoints",
+        "Lightweight in-process cache with 10s TTL",
+        "Graceful handling of missing or malformed files"
+      ],
+      "non_goals": [
+        "Real-time filesystem watching (fs.watch)",
+        "Writing to files",
+        "Artifact markdown serving (BC-01-C2)"
+      ],
+      "acceptance_criteria": [
+        "GET /api/projects returns all projects with their runs",
+        "Each run includes parsed stage data from execution-log.json",
+        "Missing or malformed files handled gracefully (skipped with warning, not 500 crash)",
+        "Response conforms to shared API types from INT-01-C1",
+        "In-process cache prevents hammering disk on every poll tick"
+      ],
+      "dependencies": [
+        "DISC-01-C1",
+        "INT-01-C1"
+      ],
+      "labels": [
+        "backend",
+        "data-layer"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "state.yaml and execution-log.json exist at documented paths",
+        "premiumRequests is always null currently -- handled as number | null",
+        "40-build/ subdirectory is obsolete per DISC-01-C1"
+      ],
+      "split_rationale": "Filesystem scan is independent of artifact reading (BC-01-C2) and config parsing (BC-01-C3).",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe Express API server is the only component with filesystem access. This implements the core data reader that powers all dashboard views. V2 (`valhalla-v2/server/`) contains a working reference implementation.\n\n## Acceptance Criteria\n\n- [ ] `GET /api/projects` returns all projects with their runs and parsed stage data\n- [ ] `GET /api/projects/:projectId` returns full run history including execution-log.json stages\n- [ ] Missing or malformed files skipped with a warning log -- no 500 crashes\n- [ ] Responses conform to shared TypeScript types in `src/types/api.ts` (INT-01-C1)\n- [ ] In-process cache with 10s TTL prevents filesystem hammering\n\n## Technical Notes\n\n- **Status values** (DISC-01-C1): `active`, `awaiting_review`, `blocked`, `completed` only\n- **premiumRequests**: Always `null` -- type as `number | null`, treat as `0` for cost calculations\n- **Artifact convention**: Flat numbered `.md` files at run root -- `40-build/` is obsolete\n- Agent-to-phase mapping table defined here; server returns `phase: design | build` per stage\n- API bound to `localhost` only\n- Reference V2 server code for YAML parsing patterns"
+    },
+    {
+      "id": "BC-01-C2",
+      "title": "Backend: artifact reader endpoint for stage markdown files",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-01",
+      "outcome": "Frontend can fetch rendered artifact markdown for any stage of any run.",
+      "scope": [
+        "GET /api/projects/:project/runs/:run/artifacts/:stage endpoint",
+        "Read numbered artifact files (00- through 80-) from run directory",
+        "Stage-to-filename mapping defined server-side",
+        "Return raw markdown string"
+      ],
+      "non_goals": [
+        "Markdown rendering (done client-side)",
+        "Artifact writing",
+        "Subdirectory traversal for 40-build/ (confirmed obsolete)"
+      ],
+      "acceptance_criteria": [
+        "Endpoint returns correct artifact content for valid stage names",
+        "Returns 404 with clear message if artifact not found",
+        "All numbered artifact conventions supported (00-request.md through 80-release.md)",
+        "Stage-to-filename mapping is server-side; client passes stage name not filename"
+      ],
+      "dependencies": [
+        "BC-01-C1"
+      ],
+      "labels": [
+        "backend",
+        "data-layer"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "S",
+      "assumptions": [
+        "Artifact files follow NN-name.md naming convention at run root",
+        "40-build/ directory convention is obsolete (confirmed in DISC-01-C1)"
+      ],
+      "split_rationale": "Artifact reading is a separate concern from project/run scanning.",
+      "size_assessment": {
+        "tshirt": "S",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe Completed view overlay (BC-06-C2) and Backlog view (BC-04-C1) need to render artifact markdown. The API resolves the stage name to the correct numbered file and serves raw markdown.\n\n## Acceptance Criteria\n\n- [ ] `GET /api/projects/:projectId/runs/:runId/artifacts/:stage` returns markdown content\n- [ ] Returns structured 404 with clear message if artifact file not found\n- [ ] Stage-to-filename mapping defined server-side (client passes `request`, `architecture`, etc.)\n- [ ] All conventions supported: `00-request.md`, `10-architecture.md`, `20-spec.md`, `30-tasks.md`, `50-implementation-summary.md`, `60-review.md`, `70-qa.md`, `80-release.md`, `80-memory.md`\n\n## Technical Notes\n\n- `40-build/` is **obsolete** for current projects -- no subdirectory traversal\n- Server returns raw markdown string; client renders with `react-markdown`\n- Stage name mapping is a simple static object in the API layer"
+    },
+    {
+      "id": "BC-01-C3",
+      "title": "Backend: agent config reader for model assignments and Design/Build team structure",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-01",
+      "outcome": "API can serve agent metadata (model, team membership, role) to frontend.",
+      "scope": [
+        "Parse odinclaw.config.yaml on startup",
+        "Derive Design team and Build team membership from config",
+        "GET /api/config endpoint returning agents with model, team, derived status",
+        "Agent status (idle/working/blocked) derived from active run stage data"
+      ],
+      "non_goals": [
+        "Writing config",
+        "Live config hot-reload",
+        "Frontend encoding of team membership logic"
+      ],
+      "acceptance_criteria": [
+        "All agents returned with correct model assignments",
+        "Agents grouped into design_team and build_team arrays pre-derived server-side",
+        "Agent status derived correctly from active run stages",
+        "Team membership follows canonical roster from odinclaw.config.yaml"
+      ],
+      "dependencies": [
+        "BC-01-C1"
+      ],
+      "labels": [
+        "backend",
+        "data-layer"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "S",
+      "assumptions": [
+        "odinclaw.config.yaml structure is stable; agents section has model/provider fields",
+        "Design team: loki/mimir/baldr/ratatoskr/sleipnir/freya/heimdall/brokk/sindri; Build: thor/ymir/modi/magni/tyr/valkyrie/jormungandr/fenrir/surtr/hel"
+      ],
+      "split_rationale": "Config parsing is independent of run data scanning.",
+      "size_assessment": {
+        "tshirt": "S",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe Dashboard Home team panels (BC-03-C2) and Pipeline view (BC-05-C1, BC-05-C2) need to know which agents belong to which phase and what model each uses. Derivation happens server-side -- frontend must not encode pipeline topology logic (architecture AD-05).\n\n## Acceptance Criteria\n\n- [ ] `GET /api/config` returns all agents with model, provider, and team assignment\n- [ ] `designTeam` and `buildTeam` arrays pre-derived server-side\n- [ ] Agent status (`idle` / `working` / `blocked`) derived from current active run stage data\n- [ ] Team membership follows canonical roster from `odinclaw.config.yaml`\n\n## Technical Notes\n\n- **Design team**: `loki, mimir, baldr, ratatoskr, sleipnir, freya, heimdall, brokk, sindri`\n- **Build team**: `thor, ymir, modi, magni, tyr, valkyrie, jormungandr, fenrir, surtr, hel`\n- **Cross-cutting**: `odin, yggdrasil`\n- Config read at startup; optionally re-read on cache miss\n- `escalation.thresholds` (max_tasks: 20, fix_cycles: 2) may be included in response for UI warning thresholds"
+    },
+    {
+      "id": "BC-01-C4",
+      "title": "Backend: limits snapshot reader for API/Copilot rate limit data",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-01",
+      "outcome": "Frontend can display remaining API limits without live external polling.",
+      "scope": [
+        "Read limits snapshot file (data/limits-snapshot.json) written by a separate process",
+        "GET /api/limits endpoint",
+        "Schema: claudeRemaining, claudeResetAt, copilotRemaining, copilotResetAt, updatedAt"
+      ],
+      "non_goals": [
+        "Live polling of external APIs",
+        "Writing limits data from this endpoint",
+        "Creating the snapshot writer process"
+      ],
+      "acceptance_criteria": [
+        "GET /api/limits returns limits data if snapshot file exists",
+        "Returns null/default values with missing:true flag if snapshot absent",
+        "Response includes updatedAt timestamp for frontend staleness indicator",
+        "No external network calls from this endpoint"
+      ],
+      "dependencies": [],
+      "labels": [
+        "backend",
+        "limits"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "S",
+      "assumptions": [
+        "Limits snapshot is written by a separate process; this API only reads it",
+        "Snapshot schema not yet finalised -- stub with known fields and mark as provisional"
+      ],
+      "split_rationale": "Limits data has no dependency on run data and can be built independently.",
+      "size_assessment": {
+        "tshirt": "S",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe Analytics limits tracker (BC-07-C3) and Dashboard home cost header (BC-03-C3) need current API limit data. This endpoint reads a locally-maintained snapshot file -- no external network calls.\n\n## Acceptance Criteria\n\n- [ ] `GET /api/limits` returns limits data when snapshot file exists\n- [ ] Returns `{ missing: true, updatedAt: null }` with null fields when snapshot is absent (not a 404)\n- [ ] Response includes `updatedAt` timestamp for frontend staleness indicator\n- [ ] No outbound network calls\n\n## Technical Notes\n\nExpected snapshot schema:\n```json\n{\n  \"claudeRemaining\": 450,\n  \"claudeResetAt\": \"2026-03-27T00:00:00Z\",\n  \"copilotRemaining\": 125,\n  \"copilotResetAt\": \"2026-04-01T00:00:00Z\",\n  \"updatedAt\": \"2026-03-26T18:00:00Z\"\n}\n```\n\n- Snapshot file location: `data/limits-snapshot.json` (configurable via env var)\n- Return graceful response rather than 404 when missing -- dashboard must degrade gracefully"
+    },
+    {
+      "id": "BC-02-C1",
+      "title": "Frontend: Zustand store with 10-second polling loop and global state slices",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-02",
+      "outcome": "All views share a single reactive data store refreshed every 10 seconds.",
+      "scope": [
+        "Zustand store with slices: projects, agents, limits, ui",
+        "10-second polling interval with AbortController cleanup",
+        "Loading and error states per slice",
+        "Derived selectors: activeJobs, backlogJobs, completedJobs, agentStatus",
+        "Stale data indicator when last refresh > 30s ago",
+        "Manual refresh trigger"
+      ],
+      "non_goals": [
+        "Per-view polling loops",
+        "WebSocket or SSE (deferred to v4)",
+        "Optimistic updates"
+      ],
+      "acceptance_criteria": [
+        "Store refreshes all slices every 10 seconds",
+        "All views consume store slices without making their own API calls",
+        "Polling stops cleanly on unmount (no memory leaks)",
+        "Stale indicator visible when last successful refresh > 30s ago",
+        "Manual refresh button triggers immediate re-poll"
+      ],
+      "dependencies": [
+        "BC-01-C1",
+        "BC-01-C3",
+        "BC-01-C4"
+      ],
+      "labels": [
+        "frontend",
+        "state-management"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "10-second polling interval is acceptable latency (V3 architecture decision)",
+        "Single Zustand store with multiple slices (architecture AD-02)"
+      ],
+      "split_rationale": "State management is a shared concern that all views depend on.",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe Zustand store is the single source of truth for all UI state. A single polling interval fires every 10 seconds updating all slices simultaneously so all views reflect the same data snapshot (architecture AD-02). Views must not make their own fetch calls.\n\n## Acceptance Criteria\n\n- [ ] Store has slices: `projectsSlice`, `activeRunSlice`, `completedRunsSlice`, `configSlice`, `limitsSlice`, `uiSlice`\n- [ ] Single `setInterval` at 10s; all views share the same poll tick\n- [ ] Polling stops cleanly on unmount via `clearInterval` / AbortController\n- [ ] `uiSlice` tracks: loading state, error state, `lastRefreshedAt`, manual-refresh trigger\n- [ ] Stale indicator shows when `lastRefreshedAt` > 30s ago\n\n## Technical Notes\n\n- Use Zustand `create` with immer middleware for clean slice mutation\n- Derived selectors: `active` = active jobs, `awaiting_review` = backlog, `completed` + `blocked` = completed\n- WebSocket/SSE upgrade path in v4: replace `setInterval` with SSE subscription without changing slice interfaces"
+    },
+    {
+      "id": "BC-03-C1",
+      "title": "Home view: active job hero card with real-time stage indicator",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-03",
+      "outcome": "User sees the most recently updated active job prominently with its current stage and agent.",
+      "scope": [
+        "HeroCard component: job title, issue number, project",
+        "Current stage indicator: stage name, agent avatar, duration",
+        "Pulsing glow animation when status is active",
+        "Empty state when no active jobs",
+        "Link to full job detail"
+      ],
+      "non_goals": [
+        "Multiple hero cards simultaneously",
+        "Editing jobs from the hero card"
+      ],
+      "acceptance_criteria": [
+        "Most recently updated active job shown in hero position",
+        "Current stage name and active agent avatar clearly visible",
+        "Pulsing animation present when status=active",
+        "Clear empty state when no active jobs",
+        "Hero card usable at 375px mobile viewport"
+      ],
+      "dependencies": [
+        "BC-02-C1",
+        "CC-01-C1"
+      ],
+      "labels": [
+        "frontend",
+        "home-view"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "Active job determined by most recent run with status=active in store"
+      ],
+      "split_rationale": "Hero card is the primary home-view component, independent of team panels and cost bar.",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe dashboard home page prominently surfaces the most active in-flight job. The hero card is the first thing a user sees and must immediately communicate what the pipeline is doing right now.\n\n## Acceptance Criteria\n\n- [ ] Most recently updated `active` run displayed as hero card\n- [ ] Current stage name and active agent avatar clearly visible\n- [ ] Pulsing glow animation when `status === 'active'` (from `src/lib/motion.ts`)\n- [ ] Clear empty state when no runs have `status === 'active'`\n- [ ] Functional and readable at 375px viewport width\n\n## Technical Notes\n\n- Consume `activeRunSlice` from Zustand store -- no direct API calls\n- Use `AgentAvatar` and `JobCard` from CC-01-C1\n- Active job: sort by `lastUpdated` descending, take first with `status === 'active'`\n- Stage and agent info from last entry in execution-log stages array"
+    },
+    {
+      "id": "BC-03-C2",
+      "title": "Home view: Design and Build agent team panels",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-03",
+      "outcome": "User can see all agents in both teams with their current status at a glance.",
+      "scope": [
+        "Two-panel layout: Design Team | Build Team",
+        "AgentCard per agent: avatar, name, model badge, status pill (idle/working/blocked)",
+        "Active job name shown when agent is working",
+        "Mobile: panels stacked with horizontal scroll per panel"
+      ],
+      "non_goals": [
+        "Clicking agent to drill into agent history",
+        "Editing agent configuration"
+      ],
+      "acceptance_criteria": [
+        "Both teams visible side-by-side on desktop",
+        "Agent status derived correctly from active run stages",
+        "Model badge shows configured model for each agent",
+        "Mobile shows panels stacked with horizontal agent scroll at 375px"
+      ],
+      "dependencies": [
+        "BC-02-C1",
+        "BC-01-C3",
+        "CC-01-C1"
+      ],
+      "labels": [
+        "frontend",
+        "home-view"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "Agent status idle/working/blocked derivable from execution-log active stage data",
+        "Team membership pre-derived by backend -- frontend receives designTeam/buildTeam arrays"
+      ],
+      "split_rationale": "Team panels are independent of the hero card and cost bar.",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe agent team panels give a bird's-eye view of the entire Norse agent system. Users should immediately know which agents are idle, working, or blocked without drilling into a specific run.\n\n## Acceptance Criteria\n\n- [ ] Design Team and Build Team panels side-by-side on desktop\n- [ ] Each `AgentCard` shows: avatar, name, model badge, status pill\n- [ ] Working agents show the active job name\n- [ ] Mobile: panels stacked, agents scroll horizontally within each panel at 375px\n\n## Technical Notes\n\n- Consume `configSlice` (team arrays) and `activeRunSlice` (agent status) from Zustand store\n- Team membership from `GET /api/config` -- frontend must not hardcode agent lists (AD-05)\n- Status: `working` if agent is current stage agent in any active run; `blocked` if run status is `blocked`; else `idle`\n- Use `AgentCard` from CC-01-C1"
+    },
+    {
+      "id": "BC-03-C3",
+      "title": "Home view: pipeline flow bar and sticky cost/limits header",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-03",
+      "outcome": "User sees high-level pipeline throughput and cost/limits at all times.",
+      "scope": [
+        "Pipeline flow bar: Backlog to Design Phase to Build Phase to Complete with job counts",
+        "Sticky cost/limits header: premium requests today/week, Claude remaining, Copilot remaining, estimated total cost",
+        "Progress bars for limit usage",
+        "CostBar component from CC-01-C1"
+      ],
+      "non_goals": [
+        "Detailed analytics (belongs in Analytics view)",
+        "Editing pipeline state"
+      ],
+      "acceptance_criteria": [
+        "Job counts in each pipeline phase accurate and update on poll",
+        "Cost header shows estimated total cost (premiumRequests * $0.10)",
+        "Limit progress bars show percentage used vs total",
+        "Cost header remains sticky on scroll"
+      ],
+      "dependencies": [
+        "BC-02-C1",
+        "BC-01-C4",
+        "CC-01-C1"
+      ],
+      "labels": [
+        "frontend",
+        "home-view"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "Premium request cost is $0.10 per request",
+        "Limits data from BC-01-C4 snapshot; may be null/stale"
+      ],
+      "split_rationale": "Flow bar and cost header are distinct from hero card and team panels.",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe pipeline flow bar and cost header provide persistent situational awareness summarising pipeline throughput and cost/limits consumption at a glance.\n\n## Acceptance Criteria\n\n- [ ] Pipeline flow bar shows job counts: Backlog / Design Phase / Build Phase / Completed\n- [ ] Counts update on each 10-second poll tick\n- [ ] Cost header shows `sum(premiumRequests ?? 0) * $0.10` (shows $0.00 while null)\n- [ ] Limit progress bars show % used for Claude and Copilot\n- [ ] Cost/limits header is sticky (remains visible on scroll)\n\n## Technical Notes\n\n- `premiumRequests` is always `null` currently -- cost shows $0.00 until pipeline populates this field\n- Limit data from `limitsSlice`; show staleness warning if `updatedAt` > 1 hour ago\n- Use `CostBar` from CC-01-C1\n- Cost rounding: display to 2 decimal places"
+    },
+    {
+      "id": "BC-04-C1",
+      "title": "Backlog view: scrollable queued jobs list with expandable request markdown",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-04",
+      "outcome": "User can browse all queued jobs and read their full request markdown inline.",
+      "scope": [
+        "Filter runs where status is awaiting_review",
+        "Card list: title, issue number, date created, project",
+        "Click to expand inline rendered markdown (react-markdown) from 00-request.md",
+        "Pull-to-refresh or visible refresh button",
+        "Empty state when backlog is empty"
+      ],
+      "non_goals": [
+        "Editing or reordering backlog items",
+        "Creating new backlog items from dashboard"
+      ],
+      "acceptance_criteria": [
+        "All queued jobs listed in reverse-chronological order",
+        "Expanding a card fetches and renders 00-request.md as markdown",
+        "Collapse works correctly on second click",
+        "Refresh button triggers store re-poll",
+        "Empty state shown when no jobs are queued"
+      ],
+      "dependencies": [
+        "BC-02-C1",
+        "BC-01-C2",
+        "CC-01-C1"
+      ],
+      "labels": [
+        "frontend",
+        "backlog-view"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "Backlog status is awaiting_review in state.yaml",
+        "00-request.md artifact exists for all backlog items"
+      ],
+      "split_rationale": "Backlog view is a self-contained view with a single outcome.",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe Backlog view shows all jobs queued and waiting to enter the pipeline. Users need to see what is coming up and read the full request brief for any queued item.\n\n## Acceptance Criteria\n\n- [ ] All `awaiting_review` runs listed in reverse-chronological order\n- [ ] Expanding triggers `GET /api/.../artifacts/request` and renders markdown inline\n- [ ] Collapse on second click\n- [ ] Refresh button triggers Zustand store re-poll\n- [ ] Clear empty state when no jobs are queued\n- [ ] Scrollable at 375px viewport\n\n## Technical Notes\n\n- Consume `projectsSlice` filtered to `status === 'awaiting_review'`\n- Lazy fetch artifact markdown on expand (not pre-loaded)\n- Render with `react-markdown` and syntax highlighting\n- Use `JobCard` from CC-01-C1 as base card"
+    },
+    {
+      "id": "BC-05-C1",
+      "title": "Pipeline view: Design Phase horizontal stage flow with job cards",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-05",
+      "outcome": "User can see all active design-phase jobs positioned at their current stage.",
+      "scope": [
+        "Horizontal scrollable stage flow for Design Phase",
+        "Stage order: Architecture, UX Design, System Map, Capability Slicing, Discovery, Issues, Issue Refinement, Planning QA",
+        "Job cards per stage: title, issue#, project, agent avatar, duration, running cost",
+        "Pulsing glow on actively-processing cards",
+        "Stage columns auto-sized to content"
+      ],
+      "non_goals": [
+        "Manual drag-and-drop of job cards",
+        "Build Phase display (BC-05-C2)",
+        "Animated card transitions (BC-05-C3)"
+      ],
+      "acceptance_criteria": [
+        "All design-phase active runs appear at their correct current stage",
+        "Stage flow is horizontally scrollable on mobile (375px)",
+        "Actively processing cards have visible pulsing animation",
+        "Running cost shows sum of premiumRequests * $0.10 so far",
+        "Empty stage columns show a minimal empty state indicator"
+      ],
+      "dependencies": [
+        "BC-02-C1",
+        "CC-01-C1",
+        "CC-02-C1"
+      ],
+      "labels": [
+        "frontend",
+        "pipeline-view",
+        "design-phase"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "L",
+      "assumptions": [
+        "Current stage derivable from last entry in execution-log stages array",
+        "Agent-to-stage mapping resolved server-side by BC-01-C3",
+        "CC-01-C2 dependency in original slice was a typo for CC-02-C1 (app shell)"
+      ],
+      "split_rationale": "Design and Build phase flows are separate sections; animations are a separate concern (BC-05-C3).",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": [
+          "Complex layout with horizontal scroll and multiple stage columns",
+          "Stage-to-column mapping requires coordination with BC-01-C3"
+        ]
+      },
+      "body": "## Context\n\nThe Pipeline view is the most complex view in Valhalla V3. This issue covers the Design Phase section -- a horizontally scrollable flow showing all active design-phase runs at their current stage.\n\n## Acceptance Criteria\n\n- [ ] Design Phase stage columns in order: Architecture / UX Design / System Map / Capability Slicing / Discovery / Issues / Issue Refinement / Planning QA\n- [ ] Active design-phase runs appear as job cards in correct stage column\n- [ ] Actively processing cards pulse visually (from `src/lib/motion.ts`)\n- [ ] Running cost shows `sum(premiumRequests ?? 0) * $0.10`\n- [ ] Horizontally scrollable at 375px -- no overflow clipping\n- [ ] Empty stage columns show minimal empty state\n\n## Technical Notes\n\n- Consume `activeRunSlice` from Zustand store\n- Current stage from last entry in execution-log stages array\n- Agent-to-stage display mapping resolved server-side -- store provides `currentStageName`\n- Note: original slice listed dependency `CC-01-C2` which does not exist -- assumed to be `CC-02-C1`"
+    },
+    {
+      "id": "BC-05-C2",
+      "title": "Pipeline view: Build Phase horizontal stage flow with job cards",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-05",
+      "outcome": "User can see all active build-phase jobs positioned at their current stage.",
+      "scope": [
+        "Horizontal scrollable stage flow for Build Phase",
+        "Stage order: Foundation, Implementation, Code Review, Adversarial Testing, Integration Testing, Resilience Testing, Release, Recovery",
+        "Same job card anatomy as Design Phase",
+        "Separate section below Design Phase with clear visual separator"
+      ],
+      "non_goals": [
+        "Merging Design and Build flows into one",
+        "Animated card transitions (BC-05-C3)"
+      ],
+      "acceptance_criteria": [
+        "All build-phase active runs appear at their correct current stage",
+        "Section is visually distinct from Design Phase with a clear labelled separator",
+        "Stage flow horizontally scrollable at 375px",
+        "Empty state shown when no active build jobs"
+      ],
+      "dependencies": [
+        "BC-05-C1",
+        "CC-01-C1"
+      ],
+      "labels": [
+        "frontend",
+        "pipeline-view",
+        "build-phase"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "L",
+      "assumptions": [
+        "Build phase: agent name maps to build team members",
+        "Job card design reused from BC-05-C1 without modification"
+      ],
+      "split_rationale": "Build and Design flows are distinct sections that can be developed and reviewed independently.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": [
+          "Complex layout must integrate with Design Phase section"
+        ]
+      },
+      "body": "## Context\n\nThe Build Phase section of the Pipeline view shows all active build-phase runs in a horizontal stage flow below the Design Phase section. It reuses the same job card design.\n\n## Acceptance Criteria\n\n- [ ] Build Phase stage columns in order: Foundation / Implementation / Code Review / Adversarial Testing / Integration Testing / Resilience Testing / Release / Recovery\n- [ ] Active build-phase runs as job cards in correct stage column\n- [ ] Visually distinct from Design Phase (clear labelled separator)\n- [ ] Horizontally scrollable at 375px\n- [ ] Clear empty state when no active build jobs\n\n## Technical Notes\n\n- Reuse `JobCard` from CC-01-C1 without modification\n- Build phase identification: agent name maps to build team (`thor, ymir, modi, magni, tyr, valkyrie, jormungandr, fenrir, surtr, hel`)\n- Phase determination done server-side by BC-01-C3 -- store provides `phase: design | build` per stage"
+    },
+    {
+      "id": "BC-05-C3",
+      "title": "Pipeline view: animated stage transition system with Framer Motion",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-05",
+      "outcome": "Job cards animate smoothly when transitioning between stages on poll refresh.",
+      "scope": [
+        "Framer Motion layoutId for shared card identity across renders",
+        "400ms ease-in-out transition when card moves between stage columns",
+        "Respects prefers-reduced-motion media query",
+        "No layout shift outside pipeline flow on transition"
+      ],
+      "non_goals": [
+        "Real-time push animations (polling-triggered is sufficient)",
+        "Animations in non-pipeline views"
+      ],
+      "acceptance_criteria": [
+        "Card slides from old stage column to new stage column on poll-triggered re-render",
+        "Transition duration approximately 400ms ease-in-out",
+        "Animation disabled when OS prefers-reduced-motion is active",
+        "No visual artifacts or layout jump during or after transition"
+      ],
+      "dependencies": [
+        "BC-05-C1",
+        "BC-05-C2"
+      ],
+      "labels": [
+        "frontend",
+        "animation",
+        "pipeline-view"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "Framer Motion layoutId approach used per UX spec",
+        "Each job card has a stable unique key (run ID) used as layoutId"
+      ],
+      "split_rationale": "Animations are a distinct concern added on top of a working static pipeline view.",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nOnce the static Pipeline view is working (BC-05-C1, BC-05-C2), this issue layers in Framer Motion animations so job cards visually slide between stage columns on poll-tick stage transitions.\n\n## Acceptance Criteria\n\n- [ ] Job card slides from old to new stage column on poll-triggered re-render\n- [ ] Transition approximately 400ms ease-in-out\n- [ ] Animation disabled when `prefers-reduced-motion` is active\n- [ ] No layout artifacts or overlap during transition\n\n## Technical Notes\n\n- Use Framer Motion `layoutId` with the run ID as identifier\n- Animation variant defined in `src/lib/motion.ts` -- no inline variant definitions\n- Test by manually editing `execution-log.json` to simulate a stage change\n- `AnimatePresence` required for entry/exit when card enters or leaves a column"
+    },
+    {
+      "id": "BC-06-C1",
+      "title": "Completed view: jobs list with summary metrics and status badges",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-06",
+      "outcome": "User can browse all finished jobs with high-level cost and duration metrics.",
+      "scope": [
+        "Filter runs where status=completed or status=blocked (terminal states)",
+        "Card list: title, project, completion date, total duration, total cost, status badge",
+        "Sort by completion date descending"
+      ],
+      "non_goals": [
+        "Editing completed jobs",
+        "Detailed stage breakdown in list view (in BC-06-C2 overlay)"
+      ],
+      "acceptance_criteria": [
+        "All completed and blocked runs listed",
+        "Total cost = sum(premiumRequests * $0.10) with null treated as 0",
+        "Total duration = sum of all stage durationMs values",
+        "Status badge reflects run outcome (completed vs blocked)",
+        "List scrollable at 375px"
+      ],
+      "dependencies": [
+        "BC-02-C1",
+        "CC-01-C1"
+      ],
+      "labels": [
+        "frontend",
+        "completed-view"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "Terminal states are completed and blocked (no failed status per DISC-01-C1)",
+        "Duration data available in execution-log.json per stage"
+      ],
+      "split_rationale": "List view and detail overlay are independent deliverables.",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe Completed view shows a historical record of all finished pipeline runs. This issue covers the list view with summary metrics; the full stage breakdown is in BC-06-C2.\n\n## Acceptance Criteria\n\n- [ ] All `completed` and `blocked` runs listed, sorted by completion date descending\n- [ ] Each card: title, project, completion date, total duration, total cost, status badge\n- [ ] Total cost: `sum(stages.premiumRequests ?? 0) * $0.10` (shows $0.00 while null)\n- [ ] Total duration: sum of all `durationMs`, formatted as `Xm Ys`\n- [ ] Status badge: green for `completed`, amber for `blocked`\n- [ ] Scrollable at 375px\n\n## Technical Notes\n\n- Consume `completedRunsSlice` from Zustand store\n- **No failed status** -- terminal states are `completed` and `blocked` only (DISC-01-C1)\n- Clicking a card opens BC-06-C2 overlay -- wire up click handler here"
+    },
+    {
+      "id": "BC-07-C2",
+      "title": "Analytics view: performance dashboard with agent durations and success rates",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-07",
+      "outcome": "User can identify slow agents, failure patterns, and Design vs Build phase timing.",
+      "scope": [
+        "Average stage duration per agent (bar chart)",
+        "Average job completion time trend (line/area chart)",
+        "Success/failure/retry rates per agent",
+        "Design phase vs Build phase duration comparison (side-by-side bars)"
+      ],
+      "non_goals": [
+        "Individual run drill-down from analytics (use Completed view)",
+        "Predictive completion time estimates"
+      ],
+      "acceptance_criteria": [
+        "All charts populated from execution-log.json stage data",
+        "Design vs Build duration comparison visible as side-by-side bars",
+        "Retry rate shown where retries field is present; N/A if absent",
+        "All charts functional at 375px mobile"
+      ],
+      "dependencies": [
+        "BC-02-C1",
+        "CC-01-C1"
+      ],
+      "labels": [
+        "frontend",
+        "analytics-view"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "L",
+      "assumptions": [
+        "execution-log.json may not have a retries field -- show N/A if absent",
+        "Duration data (durationMs per stage) sufficient for analysis"
+      ],
+      "split_rationale": "Performance charts are independent of cost charts and can be built and reviewed separately.",
+      "size_assessment": {
+        "tshirt": "L",
+        "is_too_large": false,
+        "reasons": [
+          "Multiple chart types with different aggregation strategies",
+          "Design vs Build grouping requires correct agent-to-phase mapping"
+        ]
+      },
+      "body": "## Context\n\nThe performance tab surfaces agent efficiency data: which agents take longest, where jobs get stuck, and how Design phase compares to Build phase.\n\n## Acceptance Criteria\n\n- [ ] Average stage duration per agent as bar chart (sorted descending)\n- [ ] Average job completion time trend as line/area chart\n- [ ] Retry rate per agent where `retries` field exists; `N/A` if absent\n- [ ] Design Phase vs Build Phase average duration as side-by-side bar comparison\n- [ ] Charts responsive at 375px\n\n## Technical Notes\n\n- Data source: `completedRunsSlice` -- aggregate `stages` across all completed runs\n- Phase grouping: `configSlice.designTeam` / `configSlice.buildTeam` (server-derived)\n- `durationMs` per stage is the primary duration metric\n- `retries` field may not exist in current schema -- default to `N/A`"
+    },
+    {
+      "id": "BC-07-C3",
+      "title": "Analytics view: limits tracker with usage bars and burn rate projection",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "leaf",
+      "parent_id": "BC-07",
+      "outcome": "User can see remaining API limits and whether they will exhaust before the reset date.",
+      "scope": [
+        "Claude API: remaining requests, reset time, % used progress bar",
+        "GitHub Copilot: remaining premium requests, reset time, % used progress bar",
+        "Burn rate: requests/day from rolling 7-day execution-log history",
+        "Projected days-to-limit with on-track / at-risk indicator",
+        "Staleness warning if snapshot is > 1 hour old"
+      ],
+      "non_goals": [
+        "Live external API polling (reads snapshot file from BC-01-C4)",
+        "Setting or changing API limits"
+      ],
+      "acceptance_criteria": [
+        "Both Claude and Copilot limits shown with progress bars",
+        "Reset time shown in human-readable format",
+        "Burn rate projection shows on-track or at-risk with projected exhaustion date",
+        "Staleness warning displayed if snapshot updatedAt > 1 hour ago",
+        "Graceful empty state if snapshot file is missing"
+      ],
+      "dependencies": [
+        "BC-01-C4",
+        "CC-01-C1"
+      ],
+      "labels": [
+        "frontend",
+        "analytics-view",
+        "limits"
+      ],
+      "milestone": "valhalla-v3-mvp",
+      "estimated_effort": "M",
+      "assumptions": [
+        "Burn rate calculated from rolling 7-day premiumRequests window",
+        "Burn rate will be 0 while premiumRequests is always null -- shows on track trivially"
+      ],
+      "split_rationale": "Limits tracker has distinct data source (BC-01-C4 snapshot) from cost/performance charts.",
+      "size_assessment": {
+        "tshirt": "M",
+        "is_too_large": false,
+        "reasons": []
+      },
+      "body": "## Context\n\nThe limits tracker gives visibility into API consumption headroom and warns before hitting a rate limit. Reads from the locally-maintained snapshot file (BC-01-C4) -- no live external polling.\n\nNote: burn rate will show 0 while `premiumRequests` remains null -- expected for MVP.\n\n## Acceptance Criteria\n\n- [ ] Claude API: remaining/total with progress bar\n- [ ] Copilot: remaining/total with progress bar\n- [ ] Reset time in human-readable format (e.g. resets in 3 days)\n- [ ] Burn rate projection: on-track or at-risk with projected exhaustion date\n- [ ] Staleness warning if `updatedAt` > 1 hour ago\n- [ ] Clear empty state if snapshot file is missing\n\n## Technical Notes\n\n- Consume `limitsSlice` from Zustand store\n- Burn rate window: rolling 7 days of `premiumRequests` from `completedRunsSlice`\n- Use `CostBar` from CC-01-C1 for progress bars\n- At-risk threshold: projected usage exceeds remaining before reset date"
+    },
+    {
+      "id": "BC-06-C2a",
+      "title": "Completed view: detail overlay desktop layout with accordion and artifact rendering",
+      "scope": [
+        "Full-screen overlay container with accessible close button",
+        "Two-column desktop layout (Design stages left, Build stages right)",
+        "Expandable accordion sections per stage with agent details",
+        "Lazy artifact fetch triggered on expand via BC-01-C2",
+        "Rendered artifact markdown with react-markdown and syntax highlighting",
+        "Summary footer row with cost/duration/token totals",
+        "Accessible focus trap and keyboard navigation"
+      ],
+      "estimated_effort": "M",
+      "dependencies": [
+        "BC-06-C1",
+        "BC-01-C2"
+      ]
+    },
+    {
+      "id": "BC-06-C2b",
+      "title": "Completed view: detail overlay mobile tab layout variant",
+      "scope": [
+        "Tab interface for mobile (Design | Build tabs)",
+        "Single-column layout below tab bar",
+        "Same accordion structure as desktop but stacked vertically",
+        "Reuse artifact rendering from BC-06-C2a",
+        "Responsive tab indicator and navigation",
+        "Functional at 375px viewport"
+      ],
+      "estimated_effort": "M",
+      "dependencies": [
+        "BC-06-C2a"
+      ]
+    },
+    {
+      "id": "BC-07-C1a",
+      "title": "Analytics view: cost time-series chart with granularity toggle",
+      "scope": [
+        "Daily/weekly/monthly premium request consumption time-series chart",
+        "Time granularity toggle switching chart view",
+        "Data aggregation logic for each granularity (daily, weekly, monthly)",
+        "Clear zero/empty state when no cost data",
+        "Responsive at 375px mobile",
+        "Use recharts or equivalent lightweight charting library"
+      ],
+      "estimated_effort": "M",
+      "dependencies": [
+        "BC-02-C1",
+        "CC-01-C1"
+      ]
+    },
+    {
+      "id": "BC-07-C1b",
+      "title": "Analytics view: cost breakdown charts (project, agent, model tier)",
+      "scope": [
+        "Cost per project bar chart",
+        "Cost per agent bar chart",
+        "Cost per model tier (Opus/Sonnet/Haiku) breakdown chart",
+        "Data aggregation from stage-level premiumRequests",
+        "Sorting and labeling strategy",
+        "Clear empty/zero state when no cost data",
+        "Responsive at 375px mobile"
+      ],
+      "estimated_effort": "M",
+      "dependencies": [
+        "BC-02-C1",
+        "CC-01-C1"
+      ]
+    }
+  ]
+}
