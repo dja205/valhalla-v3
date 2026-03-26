@@ -1,3 +1,12 @@
+/**
+ * Normalizes agent names for reliable matching.
+ * Strips all non-alphabetic characters and lowercases.
+ * Examples: 'Mimir-v2' -> 'mimirv', 'thor_orchestrator' -> 'thororchestrator', 'MIMIR' -> 'mimir'
+ */
+export function normalizeAgentName(agent: string): string {
+  return agent.toLowerCase().replace(/[^a-z]/g, '');
+}
+
 // Stage names for each agent in the pipeline
 export const STAGE_NAME_MAP: Record<string, string> = {
   mimir: 'Architecture',

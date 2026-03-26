@@ -8,7 +8,7 @@ import { AgentCard } from '@/components/ui/AgentCard';
 import { PipelineFlowBar } from '@/components/ui/PipelineFlowBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { DESIGN_TEAM, BUILD_TEAM, DESIGN_ORCHESTRATOR, BUILD_ORCHESTRATOR } from '@/lib/agentMap';
+import { DESIGN_TEAM, BUILD_TEAM, DESIGN_ORCHESTRATOR, BUILD_ORCHESTRATOR, normalizeAgentName } from '@/lib/agentMap';
 import { formatDuration, formatCost } from '@/lib/utils';
 import type { AgentStatus, AgentInfo } from '@/types/api';
 
@@ -185,9 +185,9 @@ export function Home() {
     if (!activeRun) return null;
     const activeStage = activeRun.stages.find(s => s.status === 'in_progress');
     if (!activeStage) return null;
-    const agentLower = activeStage.agent.toLowerCase();
-    if (agentLower === DESIGN_ORCHESTRATOR || DESIGN_TEAM.includes(agentLower)) return 'design';
-    if (agentLower === BUILD_ORCHESTRATOR || BUILD_TEAM.includes(agentLower)) return 'build';
+    const normalized = normalizeAgentName(activeStage.agent);
+    if (normalized === DESIGN_ORCHESTRATOR || DESIGN_TEAM.includes(normalized)) return 'design';
+    if (normalized === BUILD_ORCHESTRATOR || BUILD_TEAM.includes(normalized)) return 'build';
     return null;
   };
 

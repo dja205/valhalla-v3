@@ -5,6 +5,10 @@ const router = Router();
 
 const DESIGN_TEAM = ['mimir', 'baldr', 'ratatoskr', 'sleipnir', 'freya', 'brokk', 'sindri', 'heimdall'];
 
+function normalizeAgentName(agent: string): string {
+  return agent.toLowerCase().replace(/[^a-z]/g, '');
+}
+
 function getModelTier(model: string): 'opus' | 'sonnet' | 'haiku' | 'other' {
   if (model.includes('opus')) return 'opus';
   if (model.includes('haiku')) return 'haiku';
@@ -48,7 +52,7 @@ router.get('/', async (_req, res) => {
         const runDate = run.created ? dateKey(run.created) : '2025-01-01';
 
         for (const stage of stages) {
-          const isDesign = DESIGN_TEAM.includes(stage.agent?.toLowerCase() ?? '');
+          const isDesign = DESIGN_TEAM.includes(normalizeAgentName(stage.agent ?? ''));
           allEntries.push({
             projectId: project.projectId,
             runId: run.runId,
