@@ -68,6 +68,68 @@ export interface LimitsSnapshot {
   lastUpdated: string;
 }
 
+// Analytics types
+export interface TimeSeriesEntry {
+  date: string;
+  label: string;
+  premiumRequests: number;
+  durationMs: number;
+  stageCount: number;
+}
+
+export interface BreakdownEntry {
+  premiumRequests: number;
+  durationMs: number;
+  stageCount: number;
+}
+
+export interface ProjectBreakdown extends BreakdownEntry { project: string }
+export interface AgentBreakdown extends BreakdownEntry { agent: string }
+export interface ModelTierBreakdown extends BreakdownEntry { tier: string }
+
+export interface AgentPerformance {
+  agent: string;
+  avgDurationMs: number;
+  totalStages: number;
+  success: number;
+  failed: number;
+  retried: number;
+  successRate: number;
+}
+
+export interface JobCompletionPoint {
+  date: string;
+  label: string;
+  avgDurationMs: number;
+  jobCount: number;
+}
+
+export interface PhaseComparison {
+  phase: 'design' | 'build';
+  avgDurationMs: number;
+  totalDurationMs: number;
+  stageCount: number;
+}
+
+export interface AnalyticsData {
+  timeSeries: TimeSeriesEntry[];
+  weeklySeries: TimeSeriesEntry[];
+  breakdowns: {
+    byProject: ProjectBreakdown[];
+    byAgent: AgentBreakdown[];
+    byModelTier: ModelTierBreakdown[];
+  };
+  performance: {
+    agentPerformance: AgentPerformance[];
+    jobCompletionOverTime: JobCompletionPoint[];
+    designVsBuild: PhaseComparison[];
+  };
+  meta: {
+    totalEntries: number;
+    generatedAt: string;
+  };
+}
+
 export type StageStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'blocked';
 export type AgentStatus = 'idle' | 'working' | 'blocked';
 

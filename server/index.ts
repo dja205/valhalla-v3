@@ -4,6 +4,7 @@ import projectsRouter from './routes/projects';
 import configRouter from './routes/config';
 import limitsRouter from './routes/limits';
 import agentsRouter from './routes/agents';
+import analyticsRouter from './routes/analytics';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +29,7 @@ app.use('/api/projects', projectsRouter);
 app.use('/api/config', configRouter);
 app.use('/api/limits', limitsRouter);
 app.use('/api/agents', agentsRouter);
+app.use('/api/analytics', analyticsRouter);
 
 app.listen(PORT, () => {
   console.log(`🚀 Valhalla V3 server running on http://localhost:${PORT}`);

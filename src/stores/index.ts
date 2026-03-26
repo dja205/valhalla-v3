@@ -5,7 +5,8 @@ import type {
   AgentConfigResponse,
   LimitsSnapshot,
   DashboardData,
-  AgentRuntimeStatus
+  AgentRuntimeStatus,
+  AnalyticsData
 } from '@/types/api';
 
 interface StoreState {
@@ -15,6 +16,7 @@ interface StoreState {
   config: AgentConfigResponse | null;
   limits: LimitsSnapshot | null;
   agents: AgentRuntimeStatus[];
+  analytics: AnalyticsData | null;
   isLoading: boolean;
   error: string | null;
   lastRefreshed: Date | null;
@@ -25,6 +27,7 @@ interface StoreState {
   startPolling: (intervalMs?: number) => void;
   stopPolling: () => void;
   fetchArtifact: (projectId: string, runId: string, stage: string) => Promise<string | null>;
+  fetchAnalytics: () => Promise<void>;
 }
 
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
@@ -36,6 +39,7 @@ export const useStore = create<StoreState>((set, get) => ({
   config: null,
   limits: null,
   agents: [],
+  analytics: null,
   isLoading: false,
   error: null,
   lastRefreshed: null,
@@ -133,6 +137,17 @@ export const useStore = create<StoreState>((set, get) => ({
     } catch (error) {
       console.error('Artifact fetch error:', error);
       return null;
+    }
+  },
+
+  fetchAnalytics: async () => {
+    try {
+      const res = await fetch('/api/analytics');
+      if (!res.ok) throw new Error('Failed to fetch analytics');
+      const data: AnalyticsData = await res.json();
+      set({ analytics: data });
+    } catch (error) {
+      console.error('Analytics fetch error:', error);
     }
   },
 }));
