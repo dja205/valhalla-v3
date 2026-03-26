@@ -148,7 +148,8 @@
         "Desktop sidebar highlights active route",
         "Mobile bottom tab bar functional at 375px viewport",
         "Page fade transition smooth on navigation",
-        "Global error boundary renders graceful fallback on uncaught errors"
+        "Global error boundary renders graceful fallback on uncaught errors",
+        "Global error boundary renders graceful fallback UI when a view crashes"
       ],
       "dependencies": [
         "CC-01-C1"
@@ -243,7 +244,8 @@
         "Each run includes parsed stage data from execution-log.json",
         "Missing or malformed files handled gracefully (skipped with warning, not 500 crash)",
         "Response conforms to shared API types from INT-01-C1",
-        "In-process cache prevents hammering disk on every poll tick"
+        "In-process cache prevents hammering disk on every poll tick",
+        "In-process cache with 10s TTL prevents filesystem hammering on repeated requests"
       ],
       "dependencies": [
         "DISC-01-C1",
@@ -429,7 +431,8 @@
         "All views consume store slices without making their own API calls",
         "Polling stops cleanly on unmount (no memory leaks)",
         "Stale indicator visible when last successful refresh > 30s ago",
-        "Manual refresh button triggers immediate re-poll"
+        "Manual refresh button triggers immediate re-poll",
+        "Manual refresh button triggers immediate poll bypassing the 10s interval"
       ],
       "dependencies": [
         "BC-01-C1",
@@ -770,7 +773,8 @@
         "Card slides from old stage column to new stage column on poll-triggered re-render",
         "Transition duration approximately 400ms ease-in-out",
         "Animation disabled when OS prefers-reduced-motion is active",
-        "No visual artifacts or layout jump during or after transition"
+        "No visual artifacts or layout jump during or after transition",
+        "Stage transitions use 300ms ease-out for enter, 200ms ease-in for exit. Pulse glow uses 2s infinite ease-in-out."
       ],
       "dependencies": [
         "BC-05-C1",
