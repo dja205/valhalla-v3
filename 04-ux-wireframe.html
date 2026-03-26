@@ -1,0 +1,2189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Valhalla V3 — Pipeline Dashboard Wireframe</title>
+  <style>
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+      --bg-base: #0a0e1a;
+      --bg-surface: #111827;
+      --bg-surface-raised: #1e2738;
+      --bg-surface-hover: #263044;
+      --text-primary: #e8eaf0;
+      --text-muted: #6b7280;
+      --text-faint: #374151;
+      --accent-amber: #f59e0b;
+      --accent-amber-dim: rgba(245, 158, 11, 0.15);
+      --accent-cyan: #06b6d4;
+      --accent-cyan-dim: rgba(6, 182, 212, 0.15);
+      --color-success: #10b981;
+      --color-success-dim: rgba(16, 185, 129, 0.15);
+      --color-danger: #ef4444;
+      --color-danger-dim: rgba(239, 68, 68, 0.15);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-medium: rgba(255, 255, 255, 0.15);
+      --glow-amber: 0 0 12px 2px rgba(245, 158, 11, 0.35);
+      --glow-cyan: 0 0 12px 2px rgba(6, 182, 212, 0.35);
+      --glow-success: 0 0 8px 1px rgba(16, 185, 129, 0.3);
+      --sidebar-width: 200px;
+      --sidebar-collapsed: 64px;
+      --bottom-nav-height: 56px;
+      --top-bar-height: 48px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+    }
+
+    /* ===== RESET ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes pulse-ring {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6), var(--glow-amber); }
+      50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0), var(--glow-amber); }
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes accordionOpen {
+      from { opacity: 0; max-height: 0; }
+      to { opacity: 1; max-height: 1000px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+
+    /* ===== LAYOUT ===== */
+    .app-shell {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Desktop sidebar */
+    .sidebar {
+      display: none;
+      width: var(--sidebar-width);
+      min-width: var(--sidebar-width);
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      flex-direction: column;
+      padding: 0;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 20px 16px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .sidebar-logo-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent-amber);
+      letter-spacing: 0.05em;
+    }
+    .sidebar-logo-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .sidebar-nav {
+      flex: 1;
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sidebar-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 13px;
+      border: none;
+      background: none;
+      text-align: left;
+      width: 100%;
+    }
+    .sidebar-nav-item:hover { background: var(--bg-surface-raised); color: var(--text-primary); }
+    .sidebar-nav-item.active { background: var(--accent-amber-dim); color: var(--accent-amber); }
+    .sidebar-nav-item.active .nav-icon { color: var(--accent-amber); }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    .sidebar-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Main content area */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Cost summary bar */
+    .cost-bar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 16px;
+      height: var(--top-bar-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 12px;
+    }
+    .cost-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+      overflow: hidden;
+    }
+    .cost-bar-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .cost-bar-label { color: var(--text-muted); }
+    .cost-bar-value { color: var(--text-primary); font-weight: 500; }
+    .cost-bar-sep { color: var(--text-faint); }
+    .api-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--bg-surface-raised);
+    }
+    .api-indicator.claude { color: var(--accent-amber); }
+    .api-indicator.copilot { color: var(--accent-cyan); }
+    .cost-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s;
+    }
+    .refresh-btn:hover { border-color: var(--accent-amber); color: var(--accent-amber); }
+    .refresh-timestamp { font-size: 11px; color: var(--text-muted); }
+
+    /* Scrollable view area */
+    .view-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: calc(var(--bottom-nav-height) + 16px);
+    }
+
+    /* Views */
+    .view { display: none; animation: fadeIn 0.2s ease; }
+    .view.active { display: block; }
+
+    /* ===== BOTTOM NAV (mobile) ===== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--bottom-nav-height);
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: stretch;
+      z-index: 200;
+    }
+    .bottom-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 10px;
+      border: none;
+      background: none;
+      transition: color 0.15s;
+      min-height: 44px;
+    }
+    .bottom-nav-item.active { color: var(--accent-amber); }
+    .bottom-nav-item .nav-icon { font-size: 18px; }
+
+    /* ===== VIEW HEADERS ===== */
+    .view-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 16px 12px;
+    }
+    .view-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .view-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ===== CARDS / SURFACES ===== */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+    .card + .card { margin-top: 8px; }
+
+    /* ===== HOME VIEW ===== */
+    .home-section { padding: 0 16px 16px; }
+
+    /* Hero card */
+    .hero-card {
+      background: var(--bg-surface-raised);
+      border: 1px solid var(--accent-amber);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      box-shadow: var(--glow-amber);
+      animation: none;
+    }
+    .hero-card.active-border {
+      animation: pulse-ring 2s ease-in-out infinite;
+    }
+    .hero-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--accent-amber);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent-amber);
+      animation: pulse-dot 1.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    .hero-job-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .hero-meta-item { display: flex; align-items: center; gap: 4px; }
+    .hero-meta-item span:last-child { color: var(--text-primary); font-weight: 500; }
+
+    /* Team panels */
+    .team-panel-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .agent-row {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .agent-row::-webkit-scrollbar { display: none; }
+    .agent-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      min-width: 72px;
+      flex-shrink: 0;
+      cursor: default;
+    }
+    .agent-card.working {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: var(--bg-surface-raised);
+    }
+    .agent-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .agent-name {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-primary);
+      text-align: center;
+    }
+    .status-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 20px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .status-badge.working { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+    .status-badge.idle { background: rgba(107,114,128,0.15); color: var(--text-muted); }
+    .status-badge.blocked { background: var(--color-danger-dim); color: var(--color-danger); }
+    .status-badge.completed { background: var(--color-success-dim); color: var(--color-success); }
+
+    /* Pipeline flow bar */
+    .pipeline-flow-bar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .pipeline-flow-bar::-webkit-scrollbar { display: none; }
+    .flow-stage {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .flow-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--bg-surface-raised);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+    }
+    .flow-pill.active {
+      background: var(--accent-amber-dim);
+      color: var(--accent-amber);
+      border-color: rgba(245,158,11,0.3);
+    }
+    .flow-pill.done {
+      background: var(--color-success-dim);
+      color: var(--color-success);
+      border-color: rgba(16,185,129,0.3);
+    }
+    .flow-arrow { color: var(--text-faint); font-size: 12px; }
+
+    /* ===== BACKLOG VIEW ===== */
+    .backlog-list { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .job-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .job-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 14px 16px;
+      cursor: pointer;
+      gap: 12px;
+    }
+    .job-card-header:hover { background: var(--bg-surface-raised); }
+    .job-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .job-issue-badge {
+      background: var(--accent-amber-dim);
+      color: var(--accent-amber);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+    }
+    .job-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+    .job-card-project {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+    .expand-toggle {
+      color: var(--text-muted);
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: transform 0.2s;
+    }
+    .job-card.expanded .expand-toggle { transform: rotate(180deg); color: var(--accent-amber); }
+    .job-card-body {
+      display: none;
+      padding: 0 16px 16px;
+      border-top: 1px solid var(--border-subtle);
+      animation: fadeIn 0.15s ease;
+    }
+    .job-card.expanded .job-card-body { display: block; }
+    .markdown-preview {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-primary);
+    }
+    .markdown-preview h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-amber);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 14px 0 6px;
+    }
+    .markdown-preview h2:first-child { margin-top: 16px; }
+    .markdown-preview p { margin-bottom: 8px; color: var(--text-muted); }
+    .markdown-preview ul { padding-left: 18px; margin-bottom: 8px; }
+    .markdown-preview li { color: var(--text-muted); margin-bottom: 3px; }
+    .markdown-preview code {
+      background: var(--bg-surface-raised);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-cyan);
+    }
+
+    /* ===== PIPELINE VIEW ===== */
+    .pipeline-phase {
+      padding: 0 16px 20px;
+    }
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .phase-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .phase-title.design { color: var(--accent-amber); }
+    .phase-title.build { color: var(--accent-cyan); }
+    .phase-line { flex: 1; height: 1px; background: var(--border-subtle); }
+    .stage-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-subtle) transparent;
+    }
+    .stage-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 12px 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      min-width: 100px;
+      max-width: 100px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .stage-card.pending { opacity: 0.5; }
+    .stage-card.in-progress {
+      background: var(--bg-surface-raised);
+      border-color: var(--accent-amber);
+      box-shadow: var(--glow-amber);
+      animation: pulse-ring 2s ease-in-out infinite;
+      opacity: 1;
+    }
+    .stage-card.completed {
+      border-color: rgba(16, 185, 129, 0.4);
+      opacity: 0.85;
+    }
+    .stage-card.failed { border-color: rgba(239, 68, 68, 0.4); }
+    .stage-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .stage-card.pending .stage-avatar { background: var(--bg-surface-raised); color: var(--text-faint); }
+    .stage-card.in-progress .stage-avatar { background: rgba(245,158,11,0.2); color: var(--accent-amber); }
+    .stage-card.completed .stage-avatar { background: rgba(16,185,129,0.2); color: var(--color-success); }
+    .stage-name {
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.3;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .stage-card.pending .stage-name { color: var(--text-muted); }
+    .stage-status-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      margin-bottom: 3px;
+    }
+    .stage-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .stage-card.pending .stage-dot { background: var(--text-faint); }
+    .stage-card.in-progress .stage-dot { background: var(--accent-amber); animation: pulse-dot 1.5s infinite; }
+    .stage-card.completed .stage-dot { background: var(--color-success); }
+    .stage-duration { color: var(--text-muted); }
+    .stage-card.in-progress .stage-duration { color: var(--accent-amber); font-weight: 600; }
+    .stage-cost { font-size: 10px; color: var(--text-muted); }
+    .model-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: var(--bg-surface-raised);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 4px;
+    }
+    .stage-card.in-progress .model-badge { background: rgba(245,158,11,0.1); color: var(--accent-amber); }
+    .stage-card.completed .model-badge { color: var(--color-success); }
+    .no-active-caption {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 8px 0 4px;
+    }
+
+    /* ===== COMPLETED VIEW ===== */
+    .completed-list { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .completed-row {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .completed-row:hover { background: var(--bg-surface-raised); border-color: var(--border-medium); }
+    .completed-row-info { flex: 1; min-width: 0; }
+    .completed-row-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .completed-row-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .success-badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .success-badge.success { background: var(--color-success-dim); color: var(--color-success); }
+    .success-badge.failed { background: var(--color-danger-dim); color: var(--color-danger); }
+
+    /* ===== OVERLAY ===== */
+    .overlay-scrim {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 300;
+      animation: fadeIn 0.2s ease;
+    }
+    .overlay-scrim.open { display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .overlay-panel {
+      background: var(--bg-base);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 900px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: slideUp 0.25s ease;
+    }
+    .overlay-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+    .overlay-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .overlay-summary {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .overlay-close {
+      background: none;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .overlay-close:hover { border-color: var(--color-danger); color: var(--color-danger); }
+    .overlay-body {
+      flex: 1;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .overlay-col {
+      padding: 20px 24px;
+      overflow-y: auto;
+    }
+    .overlay-col:first-child { border-right: 1px solid var(--border-subtle); }
+    .overlay-col-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .overlay-col-title.design { color: var(--accent-amber); }
+    .overlay-col-title.build { color: var(--accent-cyan); }
+
+    /* Accordion */
+    .accordion-item {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+    .accordion-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      cursor: pointer;
+      background: var(--bg-surface);
+      transition: background 0.15s;
+      gap: 8px;
+    }
+    .accordion-trigger:hover { background: var(--bg-surface-raised); }
+    .accordion-trigger-left { display: flex; align-items: center; gap: 8px; }
+    .accordion-stage-name { font-size: 13px; font-weight: 600; }
+    .accordion-chevron {
+      color: var(--text-muted);
+      font-size: 14px;
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .accordion-item.open .accordion-chevron { transform: rotate(180deg); color: var(--accent-amber); }
+    .accordion-body {
+      display: none;
+      padding: 14px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+    }
+    .accordion-item.open .accordion-body { display: block; animation: fadeIn 0.15s ease; }
+    .accordion-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 16px;
+      margin-bottom: 12px;
+    }
+    .accordion-meta-item { font-size: 12px; }
+    .accordion-meta-label { color: var(--text-muted); }
+    .accordion-meta-value { color: var(--text-primary); font-weight: 500; }
+    .accordion-artifact-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .accordion-artifact-content {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+    .accordion-artifact-content strong { color: var(--text-primary); }
+    .accordion-artifact-content code {
+      background: var(--bg-surface-raised);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent-cyan);
+    }
+
+    /* On mobile, overlay goes full screen and stacks columns */
+    @media (max-width: 767px) {
+      .overlay-body { grid-template-columns: 1fr; }
+      .overlay-col:first-child { border-right: none; border-bottom: 1px solid var(--border-subtle); }
+    }
+
+    /* ===== ANALYTICS VIEW ===== */
+    .analytics-content { padding: 0 16px 24px; }
+    .analytics-section {
+      margin-bottom: 28px;
+    }
+    .analytics-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-amber);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .analytics-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 10px;
+    }
+    .analytics-chart-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .range-selector {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+    .range-btn {
+      background: none;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 4px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.15s;
+    }
+    .range-btn.active { background: var(--accent-amber-dim); border-color: var(--accent-amber); color: var(--accent-amber); }
+
+    /* SVG Bar Chart */
+    .chart-svg { width: 100%; overflow: visible; }
+    .bar-chart-container { overflow-x: auto; }
+
+    /* Big stat */
+    .big-stat { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .big-stat-number { font-size: 40px; font-weight: 800; color: var(--color-success); line-height: 1; }
+    .big-stat-label { font-size: 13px; color: var(--text-muted); }
+    .big-stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Progress bars */
+    .limit-item { margin-bottom: 16px; }
+    .limit-item:last-child { margin-bottom: 0; }
+    .limit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .limit-name { font-size: 13px; font-weight: 600; }
+    .limit-pct { font-size: 12px; font-weight: 700; color: var(--accent-amber); }
+    .progress-track {
+      height: 8px;
+      background: var(--bg-surface-raised);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--accent-amber);
+      transition: width 0.3s ease;
+    }
+    .progress-fill.low { background: var(--color-success); }
+    .progress-fill.medium { background: var(--accent-amber); }
+    .progress-fill.high { background: var(--color-danger); }
+    .limit-burn-rate { font-size: 11px; color: var(--text-muted); }
+    .limit-burn-rate strong { color: var(--accent-amber); }
+
+    /* ===== HORIZ BAR CHART ===== */
+    .hbar-chart { display: flex; flex-direction: column; gap: 8px; }
+    .hbar-row { display: flex; align-items: center; gap: 10px; }
+    .hbar-label { font-size: 11px; color: var(--text-muted); width: 90px; flex-shrink: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hbar-track { flex: 1; height: 18px; background: var(--bg-surface-raised); border-radius: 3px; overflow: hidden; }
+    .hbar-fill { height: 100%; border-radius: 3px; background: var(--accent-amber); opacity: 0.8; }
+    .hbar-fill.cyan { background: var(--accent-cyan); }
+    .hbar-value { font-size: 11px; color: var(--text-muted); width: 40px; flex-shrink: 0; font-weight: 500; }
+
+    /* ===== EMPTY STATES ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-message { font-size: 14px; }
+
+    /* ===== DESKTOP LAYOUT ===== */
+    @media (min-width: 1024px) {
+      .sidebar { display: flex; }
+      .bottom-nav { display: none; }
+      .view-area { padding-bottom: 16px; }
+      .home-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .hero-card-wrapper { grid-column: 1 / -1; }
+      .pipeline-flow-bar-wrapper { grid-column: 1 / -1; }
+      .cost-bar { padding: 0 24px; }
+      .home-section { padding: 0 24px 16px; }
+      .backlog-list { padding: 0 24px 16px; }
+      .pipeline-phase { padding: 0 24px 20px; }
+      .completed-list { padding: 0 24px 16px; }
+      .analytics-content { padding: 0 24px 24px; }
+      .view-header { padding: 24px 24px 16px; }
+      .stage-card { min-width: 120px; max-width: 120px; }
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .sidebar { display: none; }
+      .bottom-nav { display: flex; }
+      .home-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .hero-card-wrapper { grid-column: 1 / -1; }
+      .pipeline-flow-bar-wrapper { grid-column: 1 / -1; }
+    }
+
+    /* ===== UTILITIES ===== */
+    .mt8 { margin-top: 8px; }
+    .mt12 { margin-top: 12px; }
+    .mt16 { margin-top: 16px; }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+
+    /* Focus rings for accessibility */
+    button:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--accent-amber);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ===== DESKTOP SIDEBAR ===== -->
+  <aside class="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-title">⚡ VALHALLA</div>
+      <div class="sidebar-logo-sub">Pipeline Dashboard v3</div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-nav-item active" onclick="switchView('home')" id="sidebar-home" aria-current="page">
+        <span class="nav-icon">⌂</span> Home
+      </button>
+      <button class="sidebar-nav-item" onclick="switchView('backlog')" id="sidebar-backlog">
+        <span class="nav-icon">📋</span> Backlog
+      </button>
+      <button class="sidebar-nav-item" onclick="switchView('pipeline')" id="sidebar-pipeline">
+        <span class="nav-icon">⬡</span> Pipeline
+      </button>
+      <button class="sidebar-nav-item" onclick="switchView('completed')" id="sidebar-completed">
+        <span class="nav-icon">✓</span> Completed
+      </button>
+      <button class="sidebar-nav-item" onclick="switchView('analytics')" id="sidebar-analytics">
+        <span class="nav-icon">📊</span> Analytics
+      </button>
+    </nav>
+    <div class="sidebar-footer">Norse Agent System v2</div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- Cost Summary Bar -->
+    <div class="cost-bar" role="banner">
+      <div class="cost-bar-left">
+        <div class="cost-bar-item">
+          <span class="cost-bar-label">Premium:</span>
+          <span class="cost-bar-value">12/50 today</span>
+          <span class="cost-bar-sep">·</span>
+          <span class="cost-bar-value">$1.20</span>
+        </div>
+        <div class="cost-bar-item">
+          <span class="api-indicator claude">Claude 82%</span>
+          <span class="api-indicator copilot">Copilot 71%</span>
+        </div>
+      </div>
+      <div class="cost-bar-right">
+        <span class="refresh-timestamp" id="refresh-ts">Updated 3s ago</span>
+        <button class="refresh-btn" onclick="triggerRefresh()" aria-label="Refresh data">
+          <span id="refresh-icon">↻</span> Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- View Area -->
+    <div class="view-area">
+
+      <!-- ===== HOME VIEW ===== -->
+      <section class="view active" id="view-home" aria-label="Dashboard Home">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Dashboard</div>
+            <div class="view-subtitle">Real-time pipeline overview</div>
+          </div>
+        </div>
+
+        <div class="home-section">
+          <div class="home-grid">
+
+            <!-- Hero Card -->
+            <div class="hero-card-wrapper">
+              <div class="hero-card active-border" role="region" aria-label="Active job">
+                <div class="hero-label">
+                  <span class="pulse-dot" aria-hidden="true"></span>
+                  ACTIVE JOB
+                </div>
+                <div class="hero-job-title">gh-42 — Auth Refactor</div>
+                <div class="hero-meta">
+                  <div class="hero-meta-item">
+                    <span>Stage:</span>
+                    <span>Architecture</span>
+                  </div>
+                  <div class="hero-meta-item">
+                    <span>Duration:</span>
+                    <span id="hero-timer">4m 32s</span>
+                  </div>
+                  <div class="hero-meta-item">
+                    <span>Cost:</span>
+                    <span>$0.80</span>
+                  </div>
+                  <div class="hero-meta-item">
+                    <span>Model:</span>
+                    <span>claude-opus-4.5</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Design Team Panel -->
+            <div class="card">
+              <div class="team-panel-title" style="color: var(--accent-amber)">⬡ Design Team</div>
+              <div class="agent-row" role="list" aria-label="Design team agents">
+                <div class="agent-card working" role="listitem">
+                  <div class="agent-avatar" style="background:rgba(245,158,11,0.2);color:var(--accent-amber)" aria-hidden="true">LK</div>
+                  <div class="agent-name">Loki</div>
+                  <div class="status-badge working" aria-label="Status: Working">● Working</div>
+                </div>
+                <div class="agent-card" role="listitem">
+                  <div class="agent-avatar" style="background:rgba(107,114,128,0.15);color:var(--text-muted)" aria-hidden="true">MM</div>
+                  <div class="agent-name">Mimir</div>
+                  <div class="status-badge idle" aria-label="Status: Idle">○ Idle</div>
+                </div>
+                <div class="agent-card" role="listitem">
+                  <div class="agent-avatar" style="background:rgba(107,114,128,0.15);color:var(--text-muted)" aria-hidden="true">BL</div>
+                  <div class="agent-name">Baldr</div>
+                  <div class="status-badge idle" aria-label="Status: Idle">○ Idle</div>
+                </div>
+                <div class="agent-card" role="listitem">
+                  <div class="agent-avatar" style="background:rgba(107,114,128,0.15);color:var(--text-muted)" aria-hidden="true">BK</div>
+                  <div class="agent-name">Brokk</div>
+                  <div class="status-badge idle" aria-label="Status: Idle">○ Idle</div>
+                </div>
+                <div class="agent-card" role="listitem">
+                  <div class="agent-avatar" style="background:rgba(107,114,128,0.15);color:var(--text-muted)" aria-hidden="true">SN</div>
+                  <div class="agent-name">Sindri</div>
+                  <div class="status-badge idle" aria-label="Status: Idle">○ Idle</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Build Team Panel -->
+            <div class="card">
+              <div class="team-panel-title" style="color: var(--accent-cyan)">⬡ Build Team</div>
+              <div class="agent-row" role="list" aria-label="Build team agents">
+                <div class="agent-card" role="listitem">
+                  <div class="agent-avatar" style="background:rgba(107,114,128,0.15);color:var(--text-muted)" aria-hidden="true">TH</div>
+                  <div class="agent-name">Thor</div>
+                  <div class="status-badge idle" aria-label="Status: Idle">○ Idle</div>
+                </div>
+                <div class="agent-card" role="listitem">
+                  <div class="agent-avatar" style="background:rgba(107,114,128,0.15);color:var(--text-muted)" aria-hidden="true">TY</div>
+                  <div class="agent-name">Tyr</div>
+                  <div class="status-badge idle" aria-label="Status: Idle">○ Idle</div>
+                </div>
+                <div class="agent-card" role="listitem">
+                  <div class="agent-avatar" style="background:rgba(107,114,128,0.15);color:var(--text-muted)" aria-hidden="true">HM</div>
+                  <div class="agent-name">Heimdall</div>
+                  <div class="status-badge idle" aria-label="Status: Idle">○ Idle</div>
+                </div>
+                <div class="agent-card" role="listitem">
+                  <div class="agent-avatar" style="background:rgba(107,114,128,0.15);color:var(--text-muted)" aria-hidden="true">RT</div>
+                  <div class="agent-name">Ratatoskr</div>
+                  <div class="status-badge idle" aria-label="Status: Idle">○ Idle</div>
+                </div>
+                <div class="agent-card" role="listitem">
+                  <div class="agent-avatar" style="background:rgba(107,114,128,0.15);color:var(--text-muted)" aria-hidden="true">YG</div>
+                  <div class="agent-name">Yggdrasil</div>
+                  <div class="status-badge idle" aria-label="Status: Idle">○ Idle</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pipeline Flow Bar -->
+            <div class="pipeline-flow-bar-wrapper">
+              <div class="pipeline-flow-bar" role="region" aria-label="Pipeline stage flow">
+                <div class="flow-stage">
+                  <div class="flow-pill done">Backlog (2)</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-stage">
+                  <div class="flow-pill active">
+                    <span class="pulse-dot" style="display:inline-block;width:6px;height:6px;margin-right:4px;vertical-align:middle" aria-hidden="true"></span>
+                    Design
+                  </div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-stage">
+                  <div class="flow-pill">Build</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-stage">
+                  <div class="flow-pill done">Done (41)</div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- .home-grid -->
+        </div><!-- .home-section -->
+      </section>
+
+      <!-- ===== BACKLOG VIEW ===== -->
+      <section class="view" id="view-backlog" aria-label="Backlog">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Backlog</div>
+            <div class="view-subtitle">3 queued jobs</div>
+          </div>
+          <button class="refresh-btn" onclick="triggerRefresh()" aria-label="Refresh backlog">↻</button>
+        </div>
+
+        <div class="backlog-list">
+
+          <!-- Job 1 -->
+          <div class="job-card" id="job-card-1">
+            <div class="job-card-header" onclick="toggleJobCard('job-card-1')" role="button" tabindex="0" aria-expanded="false"
+                 onkeydown="if(event.key==='Enter'||event.key===' ')toggleJobCard('job-card-1')">
+              <div>
+                <div class="job-card-meta">
+                  <span class="job-issue-badge">#gh-43</span>
+                  <span>2026-03-25</span>
+                </div>
+                <div class="job-card-title">Payment Gateway Refactor</div>
+                <div class="job-card-project">portfolio/payments</div>
+              </div>
+              <div class="expand-toggle" aria-hidden="true">▼</div>
+            </div>
+            <div class="job-card-body">
+              <div class="markdown-preview">
+                <h2>Context</h2>
+                <p>The payment gateway module uses a legacy Stripe integration that doesn't support modern webhook signatures or idempotency keys. This causes occasional duplicate charges and difficult reconciliation.</p>
+                <h2>Acceptance Criteria</h2>
+                <ul>
+                  <li>Upgrade Stripe SDK to v4+ with webhook signature validation</li>
+                  <li>Implement idempotency keys for all charge operations</li>
+                  <li>Add dead-letter queue for failed webhook deliveries</li>
+                  <li>All existing payment tests passing with &lt;2s response time</li>
+                </ul>
+                <h2>Out of Scope</h2>
+                <p>Multi-currency support and PayPal integration are deferred to gh-48.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Job 2 (pre-expanded) -->
+          <div class="job-card expanded" id="job-card-2">
+            <div class="job-card-header" onclick="toggleJobCard('job-card-2')" role="button" tabindex="0" aria-expanded="true"
+                 onkeydown="if(event.key==='Enter'||event.key===' ')toggleJobCard('job-card-2')">
+              <div>
+                <div class="job-card-meta">
+                  <span class="job-issue-badge">#gh-44</span>
+                  <span>2026-03-26</span>
+                </div>
+                <div class="job-card-title">Real-time Agent Pipeline Dashboard</div>
+                <div class="job-card-project">portfolio/valhalla-v3</div>
+              </div>
+              <div class="expand-toggle" aria-hidden="true">▼</div>
+            </div>
+            <div class="job-card-body">
+              <div class="markdown-preview">
+                <h2>Context</h2>
+                <p>The Norse Agent System currently has no visibility layer. Operators cannot see which agent is running, what stage the pipeline is in, or how much cost has been incurred in the current session.</p>
+                <h2>Acceptance Criteria</h2>
+                <ul>
+                  <li>React dashboard with 5 views: Home, Backlog, Pipeline, Completed, Analytics</li>
+                  <li>Real-time polling (10s interval) from <code>execution-log.json</code></li>
+                  <li>Dark space theme with amber/cyan accent palette</li>
+                  <li>Mobile-responsive with bottom nav on mobile, sidebar on desktop</li>
+                  <li>Stage cards with live duration counters and cost display</li>
+                  <li>Job detail overlay with per-stage accordion and rendered markdown artefacts</li>
+                </ul>
+                <h2>Technical Constraints</h2>
+                <ul>
+                  <li>Vite + React 18 + TypeScript + Tailwind CSS</li>
+                  <li>No server-side rendering — static SPA</li>
+                  <li>Must run on port 3000 via <code>npm run dev</code></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Job 3 -->
+          <div class="job-card" id="job-card-3">
+            <div class="job-card-header" onclick="toggleJobCard('job-card-3')" role="button" tabindex="0" aria-expanded="false"
+                 onkeydown="if(event.key==='Enter'||event.key===' ')toggleJobCard('job-card-3')">
+              <div>
+                <div class="job-card-meta">
+                  <span class="job-issue-badge">#gh-45</span>
+                  <span>2026-03-26</span>
+                </div>
+                <div class="job-card-title">API Rate Limiter — Token Bucket Strategy</div>
+                <div class="job-card-project">portfolio/api-gateway</div>
+              </div>
+              <div class="expand-toggle" aria-hidden="true">▼</div>
+            </div>
+            <div class="job-card-body">
+              <div class="markdown-preview">
+                <h2>Context</h2>
+                <p>The API gateway has no rate limiting. Under load testing, it saturates backend services. We need a token bucket rate limiter with per-client and per-endpoint granularity.</p>
+                <h2>Acceptance Criteria</h2>
+                <ul>
+                  <li>Token bucket algorithm with Redis-backed counters</li>
+                  <li>Per-client and per-endpoint rate limit configuration</li>
+                  <li>429 responses with <code>Retry-After</code> header</li>
+                  <li>Rate limit metrics exposed via <code>/metrics</code> Prometheus endpoint</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- .backlog-list -->
+      </section>
+
+      <!-- ===== PIPELINE VIEW ===== -->
+      <section class="view" id="view-pipeline" aria-label="Pipeline">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Pipeline</div>
+            <div class="view-subtitle">Live stage execution</div>
+          </div>
+          <button class="refresh-btn" onclick="triggerRefresh()" aria-label="Refresh pipeline">↻</button>
+        </div>
+
+        <!-- Design Phase -->
+        <div class="pipeline-phase">
+          <div class="phase-header">
+            <div class="phase-title design">⬡ Design Phase</div>
+            <div class="phase-line"></div>
+          </div>
+          <div class="stage-row" role="list" aria-label="Design phase stages">
+
+            <!-- completed -->
+            <div class="stage-card completed" role="listitem" aria-label="Architecture stage: completed">
+              <div class="stage-avatar">LK</div>
+              <div class="stage-name">Architecture</div>
+              <div class="stage-status-row">
+                <div class="stage-dot"></div>
+                <div class="stage-duration">✓ Done</div>
+              </div>
+              <div class="stage-cost">$0.40</div>
+              <div class="model-badge">sonnet</div>
+            </div>
+
+            <!-- in-progress -->
+            <div class="stage-card in-progress" role="listitem" aria-label="UX Design stage: in progress" aria-live="polite">
+              <div class="stage-avatar">BL</div>
+              <div class="stage-name">UX Design</div>
+              <div class="stage-status-row">
+                <div class="stage-dot"></div>
+                <div class="stage-duration" id="pipeline-timer">2m 11s</div>
+              </div>
+              <div class="stage-cost">$0.30</div>
+              <div class="model-badge">sonnet</div>
+            </div>
+
+            <!-- pending stages -->
+            <div class="stage-card pending" role="listitem" aria-label="System Map stage: pending">
+              <div class="stage-avatar">MM</div>
+              <div class="stage-name">System Map</div>
+              <div class="stage-status-row">
+                <div class="stage-dot"></div>
+                <div class="stage-duration">—</div>
+              </div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Capability Slicing stage: pending">
+              <div class="stage-avatar">BK</div>
+              <div class="stage-name">Capability Slicing</div>
+              <div class="stage-status-row">
+                <div class="stage-dot"></div>
+                <div class="stage-duration">—</div>
+              </div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Discovery stage: pending">
+              <div class="stage-avatar">SN</div>
+              <div class="stage-name">Discovery</div>
+              <div class="stage-status-row">
+                <div class="stage-dot"></div>
+                <div class="stage-duration">—</div>
+              </div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Issues stage: pending">
+              <div class="stage-avatar">LK</div>
+              <div class="stage-name">Issues</div>
+              <div class="stage-status-row">
+                <div class="stage-dot"></div>
+                <div class="stage-duration">—</div>
+              </div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Issue Refinement stage: pending">
+              <div class="stage-avatar">BK</div>
+              <div class="stage-name">Issue Refinement</div>
+              <div class="stage-status-row">
+                <div class="stage-dot"></div>
+                <div class="stage-duration">—</div>
+              </div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Planning QA stage: pending">
+              <div class="stage-avatar">LK</div>
+              <div class="stage-name">Planning QA</div>
+              <div class="stage-status-row">
+                <div class="stage-dot"></div>
+                <div class="stage-duration">—</div>
+              </div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Build Phase -->
+        <div class="pipeline-phase">
+          <div class="phase-header">
+            <div class="phase-title build">⬡ Build Phase</div>
+            <div class="phase-line"></div>
+          </div>
+          <div class="no-active-caption">Awaiting Design Phase completion…</div>
+          <div class="stage-row mt8" role="list" aria-label="Build phase stages">
+
+            <div class="stage-card pending" role="listitem" aria-label="Foundation stage: pending">
+              <div class="stage-avatar">TH</div>
+              <div class="stage-name">Foundation</div>
+              <div class="stage-status-row"><div class="stage-dot"></div><div class="stage-duration">—</div></div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Implementation stage: pending">
+              <div class="stage-avatar">TH</div>
+              <div class="stage-name">Implementation</div>
+              <div class="stage-status-row"><div class="stage-dot"></div><div class="stage-duration">—</div></div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Code Review stage: pending">
+              <div class="stage-avatar">TY</div>
+              <div class="stage-name">Code Review</div>
+              <div class="stage-status-row"><div class="stage-dot"></div><div class="stage-duration">—</div></div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Adversarial Testing stage: pending">
+              <div class="stage-avatar">TY</div>
+              <div class="stage-name">Adversarial Testing</div>
+              <div class="stage-status-row"><div class="stage-dot"></div><div class="stage-duration">—</div></div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Integration Testing stage: pending">
+              <div class="stage-avatar">LK</div>
+              <div class="stage-name">Integration Testing</div>
+              <div class="stage-status-row"><div class="stage-dot"></div><div class="stage-duration">—</div></div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Resilience Testing stage: pending">
+              <div class="stage-avatar">LK</div>
+              <div class="stage-name">Resilience Testing</div>
+              <div class="stage-status-row"><div class="stage-dot"></div><div class="stage-duration">—</div></div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Release stage: pending">
+              <div class="stage-avatar">HM</div>
+              <div class="stage-name">Release</div>
+              <div class="stage-status-row"><div class="stage-dot"></div><div class="stage-duration">—</div></div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+            <div class="stage-card pending" role="listitem" aria-label="Recovery stage: pending">
+              <div class="stage-avatar">YG</div>
+              <div class="stage-name">Recovery</div>
+              <div class="stage-status-row"><div class="stage-dot"></div><div class="stage-duration">—</div></div>
+              <div class="stage-cost">—</div>
+              <div class="model-badge">—</div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== COMPLETED VIEW ===== -->
+      <section class="view" id="view-completed" aria-label="Completed jobs">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Completed</div>
+            <div class="view-subtitle">41 completed runs</div>
+          </div>
+          <button class="refresh-btn" onclick="triggerRefresh()" aria-label="Refresh completed list">↻</button>
+        </div>
+
+        <div class="completed-list">
+
+          <div class="completed-row" onclick="openOverlay('gh-41')" role="button" tabindex="0"
+               aria-label="Job gh-41: Auth Refactor, Success. Click to view details."
+               onkeydown="if(event.key==='Enter')openOverlay('gh-41')">
+            <div class="completed-row-info">
+              <div class="completed-row-title">gh-41 — Auth Refactor</div>
+              <div class="completed-row-meta">
+                <span>portfolio/api</span>
+                <span>2026-03-24</span>
+                <span>⏱ 1h 12m</span>
+                <span>💰 $4.20</span>
+                <span>🪙 18.4k tokens</span>
+              </div>
+            </div>
+            <div class="success-badge success" aria-label="Status: Success">✓ Success</div>
+          </div>
+
+          <div class="completed-row" onclick="openOverlay('gh-40')" role="button" tabindex="0"
+               aria-label="Job gh-40: Cache Layer, Failed. Click to view details."
+               onkeydown="if(event.key==='Enter')openOverlay('gh-40')">
+            <div class="completed-row-info">
+              <div class="completed-row-title">gh-39 — Cache Layer</div>
+              <div class="completed-row-meta">
+                <span>portfolio/cache</span>
+                <span>2026-03-22</span>
+                <span>⏱ 45m</span>
+                <span>💰 $2.10</span>
+                <span>🪙 9.1k tokens</span>
+              </div>
+            </div>
+            <div class="success-badge failed" aria-label="Status: Failed">✗ Failed</div>
+          </div>
+
+          <div class="completed-row" onclick="openOverlay('gh-38')" role="button" tabindex="0"
+               aria-label="Job gh-38: User Profiles, Success. Click to view details."
+               onkeydown="if(event.key==='Enter')openOverlay('gh-38')">
+            <div class="completed-row-info">
+              <div class="completed-row-title">gh-38 — User Profiles</div>
+              <div class="completed-row-meta">
+                <span>portfolio/users</span>
+                <span>2026-03-20</span>
+                <span>⏱ 58m</span>
+                <span>💰 $3.80</span>
+                <span>🪙 15.2k tokens</span>
+              </div>
+            </div>
+            <div class="success-badge success" aria-label="Status: Success">✓ Success</div>
+          </div>
+
+          <div class="completed-row" onclick="openOverlay('gh-37')" role="button" tabindex="0"
+               aria-label="Job gh-37: Database Migration, Success. Click to view details."
+               onkeydown="if(event.key==='Enter')openOverlay('gh-37')">
+            <div class="completed-row-info">
+              <div class="completed-row-title">gh-37 — Database Migration v2</div>
+              <div class="completed-row-meta">
+                <span>portfolio/infra</span>
+                <span>2026-03-19</span>
+                <span>⏱ 1h 34m</span>
+                <span>💰 $6.10</span>
+                <span>🪙 24.8k tokens</span>
+              </div>
+            </div>
+            <div class="success-badge success" aria-label="Status: Success">✓ Success</div>
+          </div>
+
+          <div class="completed-row" onclick="openOverlay('gh-36')" role="button" tabindex="0"
+               aria-label="Job gh-36: Logging Pipeline, Success. Click to view details."
+               onkeydown="if(event.key==='Enter')openOverlay('gh-36')">
+            <div class="completed-row-info">
+              <div class="completed-row-title">gh-36 — Logging Pipeline</div>
+              <div class="completed-row-meta">
+                <span>portfolio/observability</span>
+                <span>2026-03-18</span>
+                <span>⏱ 44m</span>
+                <span>💰 $1.90</span>
+                <span>🪙 7.6k tokens</span>
+              </div>
+            </div>
+            <div class="success-badge success" aria-label="Status: Success">✓ Success</div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===== ANALYTICS VIEW ===== -->
+      <section class="view" id="view-analytics" aria-label="Analytics">
+        <div class="view-header">
+          <div>
+            <div class="view-title">Analytics</div>
+            <div class="view-subtitle">Cost, performance, and limits</div>
+          </div>
+        </div>
+
+        <div class="analytics-content">
+
+          <!-- Cost Section -->
+          <div class="analytics-section">
+            <div class="analytics-section-title">💰 Cost</div>
+
+            <div class="analytics-card">
+              <div class="analytics-chart-title">Cost Over Time (7 days)</div>
+              <div class="range-selector" role="group" aria-label="Date range">
+                <button class="range-btn active" onclick="setRange(this,'day')">Day</button>
+                <button class="range-btn" onclick="setRange(this,'week')">Week</button>
+                <button class="range-btn" onclick="setRange(this,'month')">Month</button>
+              </div>
+              <!-- SVG Bar Chart -->
+              <div class="bar-chart-container">
+                <svg class="chart-svg" viewBox="0 0 420 120" aria-label="Bar chart of daily costs over 7 days">
+                  <!-- Background grid lines -->
+                  <line x1="40" y1="10" x2="410" y2="10" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                  <line x1="40" y1="40" x2="410" y2="40" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                  <line x1="40" y1="70" x2="410" y2="70" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                  <line x1="40" y1="100" x2="410" y2="100" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                  <!-- Y-axis labels -->
+                  <text x="34" y="14" fill="#6b7280" font-size="9" text-anchor="end">$6</text>
+                  <text x="34" y="44" fill="#6b7280" font-size="9" text-anchor="end">$4</text>
+                  <text x="34" y="74" fill="#6b7280" font-size="9" text-anchor="end">$2</text>
+                  <text x="34" y="104" fill="#6b7280" font-size="9" text-anchor="end">$0</text>
+                  <!-- Bars: values $1.20, $2.40, $3.10, $1.80, $4.20, $2.90, $1.50 max=6 -->
+                  <!-- Bar width=42, gap=10, start x=45 -->
+                  <rect x="45" y="80" width="38" height="20" rx="3" fill="#f59e0b" opacity="0.8"/>
+                  <rect x="97" y="60" width="38" height="40" rx="3" fill="#f59e0b" opacity="0.8"/>
+                  <rect x="149" y="48" width="38" height="52" rx="3" fill="#f59e0b" opacity="0.8"/>
+                  <rect x="201" y="70" width="38" height="30" rx="3" fill="#f59e0b" opacity="0.8"/>
+                  <rect x="253" y="30" width="38" height="70" rx="3" fill="#f59e0b" opacity="0.9"/>
+                  <rect x="305" y="51" width="38" height="49" rx="3" fill="#f59e0b" opacity="0.8"/>
+                  <rect x="357" y="75" width="38" height="25" rx="3" fill="#f59e0b" opacity="0.8"/>
+                  <!-- X labels -->
+                  <text x="64" y="115" fill="#6b7280" font-size="9" text-anchor="middle">Mon</text>
+                  <text x="116" y="115" fill="#6b7280" font-size="9" text-anchor="middle">Tue</text>
+                  <text x="168" y="115" fill="#6b7280" font-size="9" text-anchor="middle">Wed</text>
+                  <text x="220" y="115" fill="#6b7280" font-size="9" text-anchor="middle">Thu</text>
+                  <text x="272" y="115" fill="#6b7280" font-size="9" text-anchor="middle">Fri</text>
+                  <text x="324" y="115" fill="#6b7280" font-size="9" text-anchor="middle">Sat</text>
+                  <text x="376" y="115" fill="#6b7280" font-size="9" text-anchor="middle">Sun</text>
+                  <!-- Value labels on bars -->
+                  <text x="64" y="76" fill="#f59e0b" font-size="8" text-anchor="middle">$1.20</text>
+                  <text x="116" y="56" fill="#f59e0b" font-size="8" text-anchor="middle">$2.40</text>
+                  <text x="168" y="44" fill="#f59e0b" font-size="8" text-anchor="middle">$3.10</text>
+                  <text x="220" y="66" fill="#f59e0b" font-size="8" text-anchor="middle">$1.80</text>
+                  <text x="272" y="26" fill="#f59e0b" font-size="8" text-anchor="middle">$4.20</text>
+                  <text x="324" y="47" fill="#f59e0b" font-size="8" text-anchor="middle">$2.90</text>
+                  <text x="376" y="71" fill="#f59e0b" font-size="8" text-anchor="middle">$1.50</text>
+                </svg>
+              </div>
+            </div>
+
+            <div class="analytics-card">
+              <div class="analytics-chart-title">Cost per Project</div>
+              <div class="hbar-chart">
+                <div class="hbar-row">
+                  <div class="hbar-label">portfolio/api</div>
+                  <div class="hbar-track"><div class="hbar-fill" style="width:100%"></div></div>
+                  <div class="hbar-value">$8.40</div>
+                </div>
+                <div class="hbar-row">
+                  <div class="hbar-label">portfolio/infra</div>
+                  <div class="hbar-track"><div class="hbar-fill" style="width:73%"></div></div>
+                  <div class="hbar-value">$6.10</div>
+                </div>
+                <div class="hbar-row">
+                  <div class="hbar-label">portfolio/valhalla</div>
+                  <div class="hbar-track"><div class="hbar-fill" style="width:50%"></div></div>
+                  <div class="hbar-value">$4.20</div>
+                </div>
+                <div class="hbar-row">
+                  <div class="hbar-label">portfolio/users</div>
+                  <div class="hbar-track"><div class="hbar-fill" style="width:45%"></div></div>
+                  <div class="hbar-value">$3.80</div>
+                </div>
+                <div class="hbar-row">
+                  <div class="hbar-label">portfolio/cache</div>
+                  <div class="hbar-track"><div class="hbar-fill" style="width:25%"></div></div>
+                  <div class="hbar-value">$2.10</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance Section -->
+          <div class="analytics-section">
+            <div class="analytics-section-title">⚡ Performance</div>
+
+            <div class="analytics-card">
+              <div class="big-stat">
+                <div class="big-stat-number">89%</div>
+                <div class="big-stat-label">Success Rate</div>
+              </div>
+              <div class="big-stat-sub">17 of 19 jobs completed successfully</div>
+            </div>
+
+            <div class="analytics-card">
+              <div class="analytics-chart-title">Avg Stage Duration per Agent</div>
+              <div class="hbar-chart">
+                <div class="hbar-row">
+                  <div class="hbar-label">Thor</div>
+                  <div class="hbar-track"><div class="hbar-fill cyan" style="width:100%"></div></div>
+                  <div class="hbar-value">12.4m</div>
+                </div>
+                <div class="hbar-row">
+                  <div class="hbar-label">Loki</div>
+                  <div class="hbar-track"><div class="hbar-fill cyan" style="width:66%"></div></div>
+                  <div class="hbar-value">8.2m</div>
+                </div>
+                <div class="hbar-row">
+                  <div class="hbar-label">Tyr</div>
+                  <div class="hbar-track"><div class="hbar-fill cyan" style="width:56%"></div></div>
+                  <div class="hbar-value">7.0m</div>
+                </div>
+                <div class="hbar-row">
+                  <div class="hbar-label">Brokk</div>
+                  <div class="hbar-track"><div class="hbar-fill cyan" style="width:48%"></div></div>
+                  <div class="hbar-value">6.0m</div>
+                </div>
+                <div class="hbar-row">
+                  <div class="hbar-label">Mimir</div>
+                  <div class="hbar-track"><div class="hbar-fill cyan" style="width:41%"></div></div>
+                  <div class="hbar-value">5.1m</div>
+                </div>
+                <div class="hbar-row">
+                  <div class="hbar-label">Baldr</div>
+                  <div class="hbar-track"><div class="hbar-fill cyan" style="width:31%"></div></div>
+                  <div class="hbar-value">3.8m</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Limits Tracker -->
+          <div class="analytics-section">
+            <div class="analytics-section-title">🔋 API Limits Tracker</div>
+
+            <div class="analytics-card">
+              <div class="limit-item">
+                <div class="limit-header">
+                  <div class="limit-name">Claude API</div>
+                  <div class="limit-pct">82%</div>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill medium" style="width:82%"></div>
+                </div>
+                <div class="limit-burn-rate">Burn rate: <strong>~3 days to limit</strong> at current usage</div>
+              </div>
+
+              <div class="limit-item">
+                <div class="limit-header">
+                  <div class="limit-name">GH Copilot</div>
+                  <div class="limit-pct">71%</div>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill medium" style="width:71%"></div>
+                </div>
+                <div class="limit-burn-rate">Burn rate: <strong>~4 days to limit</strong> at current usage</div>
+              </div>
+
+              <div class="limit-item">
+                <div class="limit-header">
+                  <div class="limit-name">Premium Requests Today</div>
+                  <div class="limit-pct">24%</div>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill low" style="width:24%"></div>
+                </div>
+                <div class="limit-burn-rate">12 of 50 daily premium requests used · <strong>~8 hours before reset</strong></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- .analytics-content -->
+      </section>
+
+    </div><!-- .view-area -->
+  </main>
+</div><!-- .app-shell -->
+
+<!-- ===== BOTTOM NAV (mobile + tablet) ===== -->
+<nav class="bottom-nav" role="navigation" aria-label="Mobile navigation">
+  <button class="bottom-nav-item active" onclick="switchView('home')" id="bottom-home" aria-label="Home" aria-current="page">
+    <span class="nav-icon">⌂</span>
+    <span>Home</span>
+  </button>
+  <button class="bottom-nav-item" onclick="switchView('backlog')" id="bottom-backlog" aria-label="Backlog">
+    <span class="nav-icon">📋</span>
+    <span>Backlog</span>
+  </button>
+  <button class="bottom-nav-item" onclick="switchView('pipeline')" id="bottom-pipeline" aria-label="Pipeline">
+    <span class="nav-icon">⬡</span>
+    <span>Pipeline</span>
+  </button>
+  <button class="bottom-nav-item" onclick="switchView('completed')" id="bottom-completed" aria-label="Completed">
+    <span class="nav-icon">✓</span>
+    <span>Done</span>
+  </button>
+  <button class="bottom-nav-item" onclick="switchView('analytics')" id="bottom-analytics" aria-label="Analytics">
+    <span class="nav-icon">📊</span>
+    <span>Analytics</span>
+  </button>
+</nav>
+
+<!-- ===== JOB DETAIL OVERLAY ===== -->
+<div class="overlay-scrim" id="overlay-scrim" role="dialog" aria-modal="true" aria-labelledby="overlay-title"
+     onclick="handleScrimClick(event)">
+  <div class="overlay-panel" onclick="event.stopPropagation()">
+    <div class="overlay-header">
+      <div>
+        <div class="overlay-title" id="overlay-title">gh-41 — Auth Refactor</div>
+        <div class="overlay-summary" id="overlay-summary">
+          <span>⏱ 1h 12m</span>
+          <span>💰 $4.20</span>
+          <span>🪙 18,400 tokens</span>
+          <span class="success-badge success" style="padding:1px 8px;font-size:10px">✓ Success</span>
+        </div>
+      </div>
+      <button class="overlay-close" onclick="closeOverlay()" aria-label="Close job detail">✕</button>
+    </div>
+    <div class="overlay-body" id="overlay-body">
+
+      <!-- Design Stages -->
+      <div class="overlay-col">
+        <div class="overlay-col-title design">⬡ Design Stages</div>
+
+        <!-- Architecture — pre-expanded -->
+        <div class="accordion-item open" id="acc-arch">
+          <div class="accordion-trigger" onclick="toggleAccordion('acc-arch')" role="button" tabindex="0"
+               aria-expanded="true" onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccordion('acc-arch')">
+            <div class="accordion-trigger-left">
+              <span style="color:var(--color-success);font-size:11px">✓</span>
+              <div class="accordion-stage-name">Architecture</div>
+            </div>
+            <div class="accordion-chevron">▼</div>
+          </div>
+          <div class="accordion-body">
+            <div class="accordion-meta-grid">
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Agent</div><div class="accordion-meta-value">Loki</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Model</div><div class="accordion-meta-value">claude-sonnet-4</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Duration</div><div class="accordion-meta-value">8m 32s</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Cost</div><div class="accordion-meta-value">$0.40</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Premium Req.</div><div class="accordion-meta-value">4</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Tokens</div><div class="accordion-meta-value">2,100</div></div>
+            </div>
+            <div class="accordion-artifact-label">Artefact</div>
+            <div class="accordion-artifact-content">
+              <strong>03-architecture.md</strong><br><br>
+              Architecture defines a React SPA frontend with a Node.js polling backend. Data flows from <code>execution-log.json</code> through a REST API to the React store.<br><br>
+              <strong>Key decisions:</strong><br>
+              • Vite + React 18 + TypeScript for build toolchain<br>
+              • Zustand for global state management<br>
+              • Polling interval: 10 seconds<br>
+              • No WebSocket/SSE in v3 — simplicity over latency<br>
+              • recharts for analytics visualisations
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="acc-ux">
+          <div class="accordion-trigger" onclick="toggleAccordion('acc-ux')" role="button" tabindex="0" aria-expanded="false"
+               onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccordion('acc-ux')">
+            <div class="accordion-trigger-left">
+              <span style="color:var(--color-success);font-size:11px">✓</span>
+              <div class="accordion-stage-name">UX Design</div>
+            </div>
+            <div class="accordion-chevron">▼</div>
+          </div>
+          <div class="accordion-body">
+            <div class="accordion-meta-grid">
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Agent</div><div class="accordion-meta-value">Baldr</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Model</div><div class="accordion-meta-value">claude-sonnet-4</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Duration</div><div class="accordion-meta-value">5m 14s</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Cost</div><div class="accordion-meta-value">$0.28</div></div>
+            </div>
+            <div class="accordion-artifact-label">Artefact</div>
+            <div class="accordion-artifact-content">
+              <strong>04-ux-design.md</strong><br><br>
+              Full UX constraints document covering 5 primary journeys, 5 screen layouts across 3 breakpoints, interaction constraints, accessibility expectations, and component inventory.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="acc-sysmap">
+          <div class="accordion-trigger" onclick="toggleAccordion('acc-sysmap')" role="button" tabindex="0" aria-expanded="false"
+               onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccordion('acc-sysmap')">
+            <div class="accordion-trigger-left">
+              <span style="color:var(--color-success);font-size:11px">✓</span>
+              <div class="accordion-stage-name">System Map</div>
+            </div>
+            <div class="accordion-chevron">▼</div>
+          </div>
+          <div class="accordion-body">
+            <div class="accordion-meta-grid">
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Agent</div><div class="accordion-meta-value">Mimir</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Duration</div><div class="accordion-meta-value">3m 02s</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Cost</div><div class="accordion-meta-value">$0.18</div></div>
+            </div>
+            <div class="accordion-artifact-label">Artefact</div>
+            <div class="accordion-artifact-content">
+              <strong>02-system-map.json</strong> — Component graph with 12 nodes: App, Router, StoreProvider, HomeView, BacklogView, PipelineView, CompletedView, AnalyticsView, PollService, APIClient, and shared primitive components.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="acc-capslice">
+          <div class="accordion-trigger" onclick="toggleAccordion('acc-capslice')" role="button" tabindex="0" aria-expanded="false"
+               onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccordion('acc-capslice')">
+            <div class="accordion-trigger-left">
+              <span style="color:var(--color-success);font-size:11px">✓</span>
+              <div class="accordion-stage-name">Capability Slicing</div>
+            </div>
+            <div class="accordion-chevron">▼</div>
+          </div>
+          <div class="accordion-body">
+            <div class="accordion-meta-grid">
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Agent</div><div class="accordion-meta-value">Brokk</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Duration</div><div class="accordion-meta-value">4m 18s</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Cost</div><div class="accordion-meta-value">$0.24</div></div>
+            </div>
+            <div class="accordion-artifact-label">Artefact</div>
+            <div class="accordion-artifact-content">
+              <strong>05-capability-slices.json</strong> — 7 capability slices identified. Slice 1: Home view with hero card. Slice 2: Navigation shell. Slices 3-7 cover Backlog, Pipeline, Completed, Analytics, and Polling service.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Build Stages -->
+      <div class="overlay-col">
+        <div class="overlay-col-title build">⬡ Build Stages</div>
+
+        <div class="accordion-item" id="acc-foundation">
+          <div class="accordion-trigger" onclick="toggleAccordion('acc-foundation')" role="button" tabindex="0" aria-expanded="false"
+               onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccordion('acc-foundation')">
+            <div class="accordion-trigger-left">
+              <span style="color:var(--color-success);font-size:11px">✓</span>
+              <div class="accordion-stage-name">Foundation</div>
+            </div>
+            <div class="accordion-chevron">▼</div>
+          </div>
+          <div class="accordion-body">
+            <div class="accordion-meta-grid">
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Agent</div><div class="accordion-meta-value">Thor</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Model</div><div class="accordion-meta-value">claude-opus-4</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Duration</div><div class="accordion-meta-value">12m 40s</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Cost</div><div class="accordion-meta-value">$0.82</div></div>
+            </div>
+            <div class="accordion-artifact-label">Artefact</div>
+            <div class="accordion-artifact-content">
+              Vite project scaffolded. Dependencies installed: React 18, TypeScript, Tailwind CSS, Zustand, recharts, react-markdown, Framer Motion. Base layout shell created with sidebar and bottom nav. Design tokens applied.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="acc-impl">
+          <div class="accordion-trigger" onclick="toggleAccordion('acc-impl')" role="button" tabindex="0" aria-expanded="false"
+               onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccordion('acc-impl')">
+            <div class="accordion-trigger-left">
+              <span style="color:var(--color-success);font-size:11px">✓</span>
+              <div class="accordion-stage-name">Implementation</div>
+            </div>
+            <div class="accordion-chevron">▼</div>
+          </div>
+          <div class="accordion-body">
+            <div class="accordion-meta-grid">
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Agent</div><div class="accordion-meta-value">Thor</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Duration</div><div class="accordion-meta-value">28m 12s</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Cost</div><div class="accordion-meta-value">$1.40</div></div>
+            </div>
+            <div class="accordion-artifact-label">Artefact</div>
+            <div class="accordion-artifact-content">
+              All 5 views implemented. 18 components created. Polling service active. Zustand store wired to all views. Responsive layout complete across 3 breakpoints.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="acc-review">
+          <div class="accordion-trigger" onclick="toggleAccordion('acc-review')" role="button" tabindex="0" aria-expanded="false"
+               onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccordion('acc-review')">
+            <div class="accordion-trigger-left">
+              <span style="color:var(--color-success);font-size:11px">✓</span>
+              <div class="accordion-stage-name">Code Review</div>
+            </div>
+            <div class="accordion-chevron">▼</div>
+          </div>
+          <div class="accordion-body">
+            <div class="accordion-meta-grid">
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Agent</div><div class="accordion-meta-value">Tyr</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Duration</div><div class="accordion-meta-value">6m 50s</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Cost</div><div class="accordion-meta-value">$0.31</div></div>
+            </div>
+            <div class="accordion-artifact-label">Artefact</div>
+            <div class="accordion-artifact-content">
+              3 issues found: missing <code>aria-live</code> on stage counter, hardcoded poll interval (should be config), unused import in AnalyticsView. All resolved before integration testing.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="acc-release">
+          <div class="accordion-trigger" onclick="toggleAccordion('acc-release')" role="button" tabindex="0" aria-expanded="false"
+               onkeydown="if(event.key==='Enter'||event.key===' ')toggleAccordion('acc-release')">
+            <div class="accordion-trigger-left">
+              <span style="color:var(--color-success);font-size:11px">✓</span>
+              <div class="accordion-stage-name">Release</div>
+            </div>
+            <div class="accordion-chevron">▼</div>
+          </div>
+          <div class="accordion-body">
+            <div class="accordion-meta-grid">
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Agent</div><div class="accordion-meta-value">Heimdall</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Duration</div><div class="accordion-meta-value">3m 20s</div></div>
+              <div class="accordion-meta-item"><div class="accordion-meta-label">Cost</div><div class="accordion-meta-value">$0.14</div></div>
+            </div>
+            <div class="accordion-artifact-label">Artefact</div>
+            <div class="accordion-artifact-content">
+              PR #41 opened. Build passing. Changelog entry added. Deployment instructions in <code>RELEASE.md</code>. Valhalla v3.0.0 tagged.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- .overlay-body -->
+  </div><!-- .overlay-panel -->
+</div><!-- .overlay-scrim -->
+
+<script>
+  // ===== STATE =====
+  let currentView = 'home';
+  let heroSeconds = 272; // 4m 32s
+  let pipelineSeconds = 131; // 2m 11s
+  let refreshSeconds = 3;
+
+  // ===== VIEW SWITCHING =====
+  function switchView(viewName) {
+    // Hide all views
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    // Show selected view
+    const target = document.getElementById('view-' + viewName);
+    if (target) target.classList.add('active');
+
+    // Update sidebar nav
+    document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+      item.classList.remove('active');
+      item.removeAttribute('aria-current');
+    });
+    const sidebarItem = document.getElementById('sidebar-' + viewName);
+    if (sidebarItem) {
+      sidebarItem.classList.add('active');
+      sidebarItem.setAttribute('aria-current', 'page');
+    }
+
+    // Update bottom nav
+    document.querySelectorAll('.bottom-nav-item').forEach(item => {
+      item.classList.remove('active');
+      item.removeAttribute('aria-current');
+    });
+    const bottomItem = document.getElementById('bottom-' + viewName);
+    if (bottomItem) {
+      bottomItem.classList.add('active');
+      bottomItem.setAttribute('aria-current', 'page');
+    }
+
+    currentView = viewName;
+  }
+
+  // ===== BACKLOG ACCORDION =====
+  function toggleJobCard(cardId) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    const wasExpanded = card.classList.contains('expanded');
+    // Close all
+    document.querySelectorAll('.job-card.expanded').forEach(c => {
+      c.classList.remove('expanded');
+      const trigger = c.querySelector('.job-card-header');
+      if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    });
+    // Open this one if it wasn't open
+    if (!wasExpanded) {
+      card.classList.add('expanded');
+      const trigger = card.querySelector('.job-card-header');
+      if (trigger) trigger.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  // ===== OVERLAY ACCORDION =====
+  function toggleAccordion(itemId) {
+    const item = document.getElementById(itemId);
+    if (!item) return;
+    const isOpen = item.classList.contains('open');
+    item.classList.toggle('open', !isOpen);
+    const trigger = item.querySelector('.accordion-trigger');
+    if (trigger) trigger.setAttribute('aria-expanded', String(!isOpen));
+  }
+
+  // ===== COMPLETED OVERLAY =====
+  function openOverlay(jobId) {
+    const scrim = document.getElementById('overlay-scrim');
+    const title = document.getElementById('overlay-title');
+    const summary = document.getElementById('overlay-summary');
+
+    const jobs = {
+      'gh-41': { title: 'gh-41 — Auth Refactor', duration: '1h 12m', cost: '$4.20', tokens: '18,400', status: 'success' },
+      'gh-40': { title: 'gh-39 — Cache Layer', duration: '45m', cost: '$2.10', tokens: '9,100', status: 'failed' },
+      'gh-38': { title: 'gh-38 — User Profiles', duration: '58m', cost: '$3.80', tokens: '15,200', status: 'success' },
+      'gh-37': { title: 'gh-37 — Database Migration v2', duration: '1h 34m', cost: '$6.10', tokens: '24,800', status: 'success' },
+      'gh-36': { title: 'gh-36 — Logging Pipeline', duration: '44m', cost: '$1.90', tokens: '7,600', status: 'success' },
+    };
+
+    const job = jobs[jobId] || jobs['gh-41'];
+    if (title) title.textContent = job.title;
+    if (summary) {
+      const badge = job.status === 'success'
+        ? '<span class="success-badge success" style="padding:1px 8px;font-size:10px">✓ Success</span>'
+        : '<span class="success-badge failed" style="padding:1px 8px;font-size:10px">✗ Failed</span>';
+      summary.innerHTML = `<span>⏱ ${job.duration}</span><span>💰 ${job.cost}</span><span>🪙 ${job.tokens} tokens</span>${badge}`;
+    }
+
+    if (scrim) {
+      scrim.classList.add('open');
+      // Focus the close button
+      setTimeout(() => {
+        const closeBtn = scrim.querySelector('.overlay-close');
+        if (closeBtn) closeBtn.focus();
+      }, 50);
+    }
+  }
+
+  function closeOverlay() {
+    const scrim = document.getElementById('overlay-scrim');
+    if (scrim) scrim.classList.remove('open');
+  }
+
+  function handleScrimClick(e) {
+    if (e.target === document.getElementById('overlay-scrim')) {
+      closeOverlay();
+    }
+  }
+
+  // Close on Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeOverlay();
+  });
+
+  // ===== RANGE BUTTONS =====
+  function setRange(btn, range) {
+    btn.closest('.range-selector').querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ===== REFRESH =====
+  function triggerRefresh() {
+    const icon = document.getElementById('refresh-icon');
+    const ts = document.getElementById('refresh-ts');
+    if (icon) icon.style.transform = 'rotate(360deg)';
+    if (icon) icon.style.transition = 'transform 0.5s ease';
+    setTimeout(() => {
+      if (icon) { icon.style.transform = ''; icon.style.transition = ''; }
+    }, 500);
+    refreshSeconds = 0;
+    if (ts) ts.textContent = 'Updated just now';
+  }
+
+  // ===== TIMERS =====
+  function formatDuration(seconds) {
+    if (seconds < 60) return seconds + 's';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+  }
+
+  setInterval(function() {
+    // Hero timer
+    heroSeconds++;
+    const heroEl = document.getElementById('hero-timer');
+    if (heroEl) heroEl.textContent = formatDuration(heroSeconds);
+
+    // Pipeline timer
+    pipelineSeconds++;
+    const pipelineEl = document.getElementById('pipeline-timer');
+    if (pipelineEl) pipelineEl.textContent = formatDuration(pipelineSeconds);
+
+    // Refresh timestamp
+    refreshSeconds++;
+    const tsEl = document.getElementById('refresh-ts');
+    if (tsEl) {
+      if (refreshSeconds < 5) tsEl.textContent = 'Updated just now';
+      else tsEl.textContent = 'Updated ' + refreshSeconds + 's ago';
+    }
+  }, 1000);
+
+  // ===== INIT =====
+  switchView('home');
+</script>
+</body>
+</html>
