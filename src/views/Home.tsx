@@ -8,9 +8,9 @@ import { AgentCard } from '@/components/ui/AgentCard';
 import { PipelineFlowBar } from '@/components/ui/PipelineFlowBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { DESIGN_TEAM, BUILD_TEAM } from '@/lib/agentMap';
+import { DESIGN_TEAM, BUILD_TEAM, DESIGN_ORCHESTRATOR, BUILD_ORCHESTRATOR } from '@/lib/agentMap';
 import { formatDuration, formatCost } from '@/lib/utils';
-import type { AgentStatus } from '@/types/api';
+import type { AgentStatus, AgentInfo } from '@/types/api';
 
 const PIPELINE_STAGES = [
   { key: 'request', abbr: 'req' },
@@ -62,19 +62,75 @@ function StagePipeline({ stagesCompleted, currentStage }: { stagesCompleted: str
   );
 }
 
+/** Horizontal-scrolling agent panel (mobile) / grid (desktop) */
+function AgentTeamPanel({
+  title,
+  accentClass,
+  agents,
+  getStatus,
+  getStage,
+  getModel,
+  orchestrator,
+}: {
+  title: string;
+  accentClass: string;
+  agents: string[];
+  getStatus: (name: string) => AgentStatus;
+  getStage: (name: string) => string | undefined;
+  getModel: (name: string) => string | undefined;
+  orchestrator: string;
+}) {
+  const allAgents = [orchestrator, ...agents];
+
+  return (
+    <div className="bg-bg-surface rounded-lg p-4 border border-bg-raised">
+      <div className="flex items-center gap-2 mb-4">
+        <span className={`w-2 h-2 ${accentClass} rounded-full`} />
+        <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
+      </div>
+      {/* Mobile: horizontal scroll strip */}
+      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory md:hidden">
+        {allAgents.map(agent => (
+          <div key={agent} className="flex-shrink-0 snap-start w-28">
+            <AgentCard
+              agentName={agent}
+              status={getStatus(agent)}
+              currentStage={getStage(agent)}
+              model={getModel(agent)}
+            />
+          </div>
+        ))}
+      </div>
+      {/* Desktop: grid */}
+      <div className="hidden md:grid grid-cols-3 lg:grid-cols-5 gap-3">
+        {allAgents.map(agent => (
+          <AgentCard
+            key={agent}
+            agentName={agent}
+            status={getStatus(agent)}
+            currentStage={getStage(agent)}
+            model={getModel(agent)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Home() {
-  const { 
-    projects, 
-    activeRun, 
+  const {
+    projects,
+    activeRun,
     completedRuns,
-    isLoading, 
-    error, 
-    lastRefreshed, 
-    isRefreshing, 
-    fetchAll, 
-    refresh, 
-    startPolling, 
-    stopPolling 
+    config,
+    isLoading,
+    error,
+    lastRefreshed,
+    isRefreshing,
+    fetchAll,
+    refresh,
+    startPolling,
+    stopPolling,
   } = useStore();
 
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -91,17 +147,22 @@ export function Home() {
       setElapsedMs(0);
       return;
     }
-    
     const startTime = new Date(activeRun.created).getTime();
     const updateElapsed = () => setElapsedMs(Date.now() - startTime);
-    
     updateElapsed();
     const interval = setInterval(updateElapsed, 1000);
     return () => clearInterval(interval);
   }, [activeRun]);
 
-  // Determine which agent is currently working based on activeRun stages
-  const getAgentStatus = (agentName: string): AgentStatus => {
+  // Build agent info lookup from config
+  const agentInfoMap: Record<string, AgentInfo> = {};
+  if (config?.agents) {
+    for (const a of config.agents) {
+      agentInfoMap[a.name.toLowerCase()] = a;
+    }
+  }
+
+  const getStatus = (agentName: string): AgentStatus => {
     if (!activeRun) return 'idle';
     const activeStage = activeRun.stages.find(s => s.status === 'in_progress');
     if (activeStage && activeStage.agent.toLowerCase() === agentName.toLowerCase()) {
@@ -110,18 +171,29 @@ export function Home() {
     return 'idle';
   };
 
-  // Determine current pipeline phase
+  const getStage = (agentName: string): string | undefined => {
+    return activeRun?.stages.find(
+      s => s.agent.toLowerCase() === agentName && s.status === 'in_progress'
+    )?.stage;
+  };
+
+  const getModel = (agentName: string): string | undefined => {
+    return agentInfoMap[agentName.toLowerCase()]?.model;
+  };
+
   const getCurrentPhase = (): 'backlog' | 'design' | 'build' | 'complete' | null => {
     if (!activeRun) return null;
     const activeStage = activeRun.stages.find(s => s.status === 'in_progress');
     if (!activeStage) return null;
-    
-    if (DESIGN_TEAM.includes(activeStage.agent.toLowerCase())) return 'design';
-    if (BUILD_TEAM.includes(activeStage.agent.toLowerCase())) return 'build';
+    const agentLower = activeStage.agent.toLowerCase();
+    if (agentLower === DESIGN_ORCHESTRATOR || DESIGN_TEAM.includes(agentLower)) return 'design';
+    if (agentLower === BUILD_ORCHESTRATOR || BUILD_TEAM.includes(agentLower)) return 'build';
     return null;
   };
 
-  const backlogCount = projects.filter(p => p.status === 'awaiting_review').length;
+  const backlogCount = projects.filter(
+    p => p.status === 'awaiting_review' || p.runs.some(r => r.currentStage === 'request')
+  ).length;
   const activeCount = projects.filter(p => p.status === 'active').length;
 
   return (
@@ -129,17 +201,19 @@ export function Home() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Valhalla V3</h1>
-        <RefreshControl 
-          lastRefreshed={lastRefreshed} 
-          isRefreshing={isRefreshing} 
-          onRefresh={refresh} 
+        <RefreshControl
+          lastRefreshed={lastRefreshed}
+          isRefreshing={isRefreshing}
+          onRefresh={refresh}
         />
       </div>
 
       {error && <ErrorBanner message={error} />}
 
-      {/* Cost Summary Bar */}
-      <CostSummaryBar />
+      {/* Sticky Cost/Limits Header */}
+      <div className="sticky top-0 z-20">
+        <CostSummaryBar />
+      </div>
 
       {/* Active Job Hero Card */}
       {isLoading ? (
@@ -159,14 +233,19 @@ export function Home() {
                 Run: {activeRun.runId}
               </div>
               <div className="text-text-muted text-sm">
-                Current Stage: <span className="text-accent-amber font-medium capitalize">{activeRun.currentStage || 'Unknown'}</span>
+                Current Stage:{' '}
+                <span className="text-accent-amber font-medium capitalize">
+                  {activeRun.currentStage || 'Unknown'}
+                </span>
               </div>
-              {/* Agent working */}
               {(() => {
                 const inProgressStage = activeRun.stages.find(s => s.status === 'in_progress');
                 return inProgressStage ? (
                   <div className="text-text-muted text-sm mt-1">
-                    Agent: <span className="text-accent-cyan font-medium capitalize">{inProgressStage.agent}</span>
+                    Agent:{' '}
+                    <span className="text-accent-cyan font-medium capitalize">
+                      {inProgressStage.agent}
+                    </span>
                   </div>
                 ) : null;
               })()}
@@ -182,8 +261,6 @@ export function Home() {
               </div>
             </div>
           </div>
-
-          {/* Stage Progress Indicator */}
           <StagePipeline
             stagesCompleted={activeRun.stagesCompleted}
             currentStage={activeRun.currentStage}
@@ -196,7 +273,7 @@ export function Home() {
       )}
 
       {/* Pipeline Flow Bar */}
-      <PipelineFlowBar 
+      <PipelineFlowBar
         currentPhase={getCurrentPhase()}
         backlogCount={backlogCount}
         designCount={activeCount}
@@ -206,41 +283,24 @@ export function Home() {
 
       {/* Agent Team Panels */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Design Team */}
-        <div className="bg-bg-surface rounded-lg p-4 border border-bg-raised">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="w-2 h-2 bg-accent-amber rounded-full" />
-            <h3 className="text-lg font-semibold text-text-primary">Design Team</h3>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {DESIGN_TEAM.map(agent => (
-              <AgentCard 
-                key={agent} 
-                agentName={agent} 
-                status={getAgentStatus(agent)}
-                currentStage={activeRun?.stages.find(s => s.agent.toLowerCase() === agent && s.status === 'in_progress')?.stage}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Build Team */}
-        <div className="bg-bg-surface rounded-lg p-4 border border-bg-raised">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="w-2 h-2 bg-accent-cyan rounded-full" />
-            <h3 className="text-lg font-semibold text-text-primary">Build Team</h3>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {BUILD_TEAM.map(agent => (
-              <AgentCard 
-                key={agent} 
-                agentName={agent} 
-                status={getAgentStatus(agent)}
-                currentStage={activeRun?.stages.find(s => s.agent.toLowerCase() === agent && s.status === 'in_progress')?.stage}
-              />
-            ))}
-          </div>
-        </div>
+        <AgentTeamPanel
+          title="Design Team"
+          accentClass="bg-accent-amber"
+          orchestrator={DESIGN_ORCHESTRATOR}
+          agents={DESIGN_TEAM}
+          getStatus={getStatus}
+          getStage={getStage}
+          getModel={getModel}
+        />
+        <AgentTeamPanel
+          title="Build Team"
+          accentClass="bg-accent-cyan"
+          orchestrator={BUILD_ORCHESTRATOR}
+          agents={BUILD_TEAM}
+          getStatus={getStatus}
+          getStage={getStage}
+          getModel={getModel}
+        />
       </div>
     </div>
   );
