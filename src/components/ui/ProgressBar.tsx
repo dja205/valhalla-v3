@@ -2,13 +2,12 @@ interface ProgressBarProps {
   value: number;
   max: number;
   label?: string;
-  burnRate?: number;
+  burnRate?: string;
 }
 
 export function ProgressBar({ value, max, label, burnRate }: ProgressBarProps) {
-  const percentage = (value / max) * 100;
-  const isWarning = percentage > 80;
-  const isDanger = percentage > 95;
+  const percentage = max > 0 ? (value / max) * 100 : 0;
+  const colorClass = percentage > 90 ? 'bg-danger' : percentage > 70 ? 'bg-accent-amber' : 'bg-success';
 
   return (
     <div>
@@ -17,19 +16,22 @@ export function ProgressBar({ value, max, label, burnRate }: ProgressBarProps) {
           <span className="text-text-muted">{label}</span>
           <span className="text-text-primary font-medium">
             {value.toFixed(0)} / {max.toFixed(0)}
-            {burnRate && <span className="text-text-muted ml-2">({burnRate.toFixed(2)}/min)</span>}
           </span>
         </div>
       )}
       
       <div className="w-full bg-bg-base rounded-full h-2 overflow-hidden">
         <div
-          className={`h-full transition-all duration-300 ${
-            isDanger ? 'bg-danger' : isWarning ? 'bg-accent-amber' : 'bg-success'
-          }`}
+          className={`h-full transition-all duration-300 ${colorClass}`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
       </div>
+      
+      {burnRate && (
+        <div className="text-xs text-text-muted mt-1 text-right">
+          {burnRate}
+        </div>
+      )}
     </div>
   );
 }

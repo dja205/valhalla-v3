@@ -1,49 +1,103 @@
 import { motion } from 'framer-motion';
 import { stageTransition } from '@/lib/motion';
-import type { RunStageEntry } from '@/types/api';
+import type { RunStageEntry, RunDetail } from '@/types/api';
 import { AgentAvatar } from './AgentAvatar';
 import { StatusBadge } from './StatusBadge';
+import { ModelBadge } from './ModelBadge';
 import { formatDuration, formatCost } from '@/lib/utils';
 
-interface JobCardProps {
-  job: RunStageEntry;
-  variant?: 'compact' | 'detailed';
+interface JobCardListProps {
+  run: RunDetail;
+  onClick?: () => void;
 }
 
-export function JobCard({ job, variant = 'compact' }: JobCardProps) {
+interface JobCardStageProps {
+  stage: RunStageEntry;
+  isActive?: boolean;
+}
+
+type JobCardProps = 
+  | { variant: 'list'; run: RunDetail; onClick?: () => void }
+  | { variant: 'stage'; stage: RunStageEntry; isActive?: boolean };
+
+export function JobCard(props: JobCardProps) {
+  if (props.variant === 'list') {
+    return <JobCardList run={props.run} onClick={props.onClick} />;
+  }
+  return <JobCardStage stage={props.stage} isActive={props.isActive} />;
+}
+
+function JobCardList({ run, onClick }: JobCardListProps) {
+  const statusMap: Record<string, 'completed' | 'in_progress' | 'pending'> = {
+    completed: 'completed',
+    active: 'in_progress',
+    awaiting_review: 'pending',
+    blocked: 'blocked' as 'pending',
+  };
+  
   return (
     <motion.div 
       variants={stageTransition}
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="bg-bg-surface rounded-lg p-4 border border-bg-raised"
+      onClick={onClick}
+      className="bg-bg-surface rounded-lg p-4 border border-bg-raised hover:border-accent-cyan transition-colors cursor-pointer"
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-text-primary truncate">{run.projectId}</div>
+          <div className="text-sm text-text-muted truncate">{run.runId}</div>
+        </div>
+        <div className="flex items-center gap-3">
+          <StatusBadge status={statusMap[run.status] || 'pending'} size="sm" />
+          <div className="text-right">
+            <div className="text-sm text-accent-amber font-medium">{formatCost(run.totalCost)}</div>
+            <div className="text-xs text-text-muted">{formatDuration(run.totalDurationMs)}</div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function JobCardStage({ stage, isActive }: JobCardStageProps) {
+  const status = stage.status === 'completed' ? 'completed' : 
+                 stage.status === 'in_progress' ? 'in_progress' : 'pending';
+  const agentStatus = isActive ? 'working' : 'idle';
+  
+  return (
+    <motion.div 
+      variants={stageTransition}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      className={`bg-bg-surface rounded-lg p-4 border ${
+        isActive 
+          ? 'border-accent-amber shadow-[0_0_12px_rgba(240,160,64,0.3)]' 
+          : 'border-bg-raised'
+      }`}
     >
       <div className="flex items-center gap-3">
         <AgentAvatar 
-          agent={job.agent} 
+          agent={stage.agent} 
           size="sm" 
-          status={job.status === 'running' ? 'active' : job.status === 'completed' ? 'completed' : 'idle'}
+          status={agentStatus}
         />
-        <div className="flex-1">
-          <div className="font-medium text-text-primary">{job.stage}</div>
-          <div className="text-sm text-text-muted">{job.agent}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-text-primary capitalize">{stage.stage}</span>
+            <ModelBadge model={stage.model} />
+          </div>
+          <div className="text-sm text-text-muted">{stage.agent}</div>
         </div>
-        <StatusBadge status={job.status} />
+        <div className="text-right">
+          <StatusBadge status={status} size="sm" />
+          <div className="text-xs text-text-muted mt-1">
+            {stage.durationFormatted || formatDuration(stage.durationMs)}
+          </div>
+        </div>
       </div>
-      
-      {variant === 'detailed' && job.status === 'completed' && (
-        <div className="mt-3 pt-3 border-t border-bg-raised text-sm text-text-muted">
-          <div className="flex justify-between">
-            <span>Duration:</span>
-            <span>{formatDuration((new Date(job.endTime!).getTime() - new Date(job.startTime!).getTime()))}</span>
-          </div>
-          <div className="flex justify-between mt-1">
-            <span>Cost:</span>
-            <span>{formatCost(job.cost)}</span>
-          </div>
-        </div>
-      )}
     </motion.div>
   );
 }

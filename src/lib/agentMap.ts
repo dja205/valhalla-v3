@@ -2,7 +2,7 @@ export const AGENT_AVATAR_MAP: Record<string, string> = {
   loki: '/img/agents/loki.PNG',
   mimir: '/img/agents/mimir.PNG',
   baldr: '/img/agents/baldr.PNG',
-  ratatoskr: '/img/agents/ratatoksr.PNG',
+  ratatoskr: '/img/agents/ratatoskr.PNG',
   sleipnir: '/img/agents/sleipnir.PNG',
   freya: '/img/agents/freya.PNG',
   heimdall: '/img/agents/heimdall.PNG',
@@ -20,5 +20,14 @@ export const AGENT_AVATAR_MAP: Record<string, string> = {
   hel: '/img/agents/hel.PNG',
 };
 
-export const DESIGN_TEAM = ['loki', 'mimir', 'baldr', 'ratatoskr', 'sleipnir', 'freya', 'heimdall', 'brokk', 'sindri'];
-export const BUILD_TEAM = ['thor', 'ymir', 'modi', 'magni', 'tyr', 'valkyrie', 'jormungandr', 'fenrir', 'surtr', 'hel'];
+// Design phase display order (loki is orchestrator)
+export const DESIGN_TEAM = ['mimir', 'baldr', 'ratatoskr', 'sleipnir', 'freya', 'brokk', 'sindri', 'heimdall'];
+export const DESIGN_ORCHESTRATOR = 'loki';
+
+// Build phase display order (thor is orchestrator)
+export const BUILD_TEAM = ['ymir', 'modi', 'magni', 'tyr', 'valkyrie', 'jormungandr', 'fenrir', 'surtr', 'hel'];
+export const BUILD_ORCHESTRATOR = 'thor';
+
+// All agents including orchestrators
+export const ALL_DESIGN_AGENTS = ['loki', ...DESIGN_TEAM];
+export const ALL_BUILD_AGENTS = ['thor', ...BUILD_TEAM];

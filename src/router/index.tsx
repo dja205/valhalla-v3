@@ -10,7 +10,8 @@ function Layout() {
   return (
     <div className="min-h-screen bg-bg-base">
       <Navigation />
-      <main className="md:ml-64 pb-20 md:pb-0">
+      {/* Main content: sidebar width varies, so use min-width */}
+      <main className="md:ml-48 lg:ml-56 pb-16 md:pb-0 min-h-screen">
         <Outlet />
       </main>
     </div>
