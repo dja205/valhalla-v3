@@ -1,0 +1,68 @@
+{
+  "orchestrator": "loki",
+  "project": "valhalla-v3",
+  "run": "2026-03-26-gh1-build-valhalla-v3-real-time-agent-pipeline-dashboard",
+  "timestamp": "2026-03-26T00:57:00Z",
+  "design_workflow_state": {
+    "request_summary": "Build Valhalla V3 — a completely rebuilt real-time dashboard for monitoring the Norse Agent System v2 pipeline. Two-phase architecture (Design/Build), 5 views (Overview, Backlog, Pipeline, Completed, Analytics), cost tracking, agent status, mobile-first dark theme.",
+    "current_layer": "design",
+    "specialists_planned": ["ratatoskr", "mimir", "baldr", "sleipnir", "freya", "brokk", "sindri", "heimdall"],
+    "stop_condition": "heimdall readiness gate passed, 12-delivery-pack.md produced",
+    "risks": [
+      "Two-phase pipeline visualisation is complex UI — Baldr must ground this clearly",
+      "Real-time data polling from filesystem needs careful backend architecture",
+      "Cost/limit tracking may need partial deferral if live APIs are unavailable",
+      "Mobile-first with swipeable pipeline stages is high interaction complexity"
+    ]
+  },
+  "routing_decisions": [
+    {
+      "step": 1,
+      "specialist": "ratatoskr",
+      "artifact": "02-system-map.json",
+      "rationale": "Map bounded contexts first: frontend app, backend API, data layer, agent system. Top-level concerns before drilling in."
+    },
+    {
+      "step": 2,
+      "specialist": "mimir",
+      "artifact": "03-architecture.md",
+      "rationale": "Architecture constraints: frontend/backend split, data sources, API design, real-time polling strategy, tech stack decisions."
+    },
+    {
+      "step": 3,
+      "specialist": "baldr",
+      "artifact": "04-ux-design.md",
+      "rationale": "UX design required by request. 5 views, two-phase pipeline, mobile-first, agent status panels, cost bars. High complexity."
+    },
+    {
+      "step": 4,
+      "specialist": "sleipnir",
+      "artifact": "05-capability-slices.json",
+      "rationale": "Slice into independently deliverable capabilities: data layer, backend API, each view, real-time refresh, analytics."
+    },
+    {
+      "step": 5,
+      "specialist": "freya",
+      "artifact": "06-discovery.json",
+      "rationale": "Discover unknowns: existing codebase state, agent avatar assets, data file formats, limit API availability."
+    },
+    {
+      "step": 6,
+      "specialist": "brokk",
+      "artifact": "07-issue-drafts.json",
+      "rationale": "Emit parent issues per capability slice."
+    },
+    {
+      "step": 7,
+      "specialist": "sindri",
+      "artifact": "08-split-issues.json",
+      "rationale": "Split parent issues into child tasks sized for implementation."
+    },
+    {
+      "step": 8,
+      "specialist": "heimdall",
+      "artifact": "11-planning-qa.json",
+      "rationale": "Planning QA and readiness gate before delivery pack."
+    }
+  ]
+}

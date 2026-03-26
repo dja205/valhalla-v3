@@ -1,0 +1,568 @@
+{
+  "request_summary": "Valhalla V3 — real-time Norse Agent System pipeline monitoring dashboard. React 18 + TypeScript + Vite frontend, Express backend, filesystem data sources.",
+  "decomposition_level": "domain_capabilities",
+  "items": [
+    {
+      "id": "BC-01-C1",
+      "title": "Filesystem data reader: scan portfolio projects and parse state.yaml + execution-log.json",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-01",
+      "outcome": "Backend can enumerate all projects and runs, reading status and stage data from filesystem.",
+      "scope": [
+        "Recursive scan of ~/odinclaw/portfolio/projects/",
+        "Parse state.yaml per project (runs list, status, current_stage)",
+        "Parse execution-log.json per run (stages, agent, model, duration, premiumRequests, tokens)",
+        "Return structured ProjectRun objects"
+      ],
+      "non_goals": ["Real-time filesystem watching", "Writing to files"],
+      "acceptance_criteria": [
+        "GET /api/projects returns all projects with their runs",
+        "Each run includes parsed stage data from execution-log.json",
+        "Missing or malformed files are handled gracefully (skipped with warning)",
+        "Response conforms to shared API types contract"
+      ],
+      "dependencies": ["DISC-01-C1"],
+      "labels": ["backend", "data-layer"],
+      "assumptions": [
+        "state.yaml and execution-log.json exist at documented paths",
+        "execution-log.json uses the schema observed in decimal-jump sample"
+      ],
+      "split_rationale": "Filesystem scan is independent of artifact reading.",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-01-C2",
+      "title": "Artifact reader: serve stage markdown artifacts as API responses",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-01",
+      "outcome": "Frontend can fetch rendered artifact markdown for any stage of any run.",
+      "scope": [
+        "GET /api/projects/:project/runs/:run/artifacts/:stage endpoint",
+        "Read numbered artifact files (00- through 80-) from run directory",
+        "Return raw markdown string"
+      ],
+      "non_goals": ["Markdown rendering (done client-side)", "Artifact writing"],
+      "acceptance_criteria": [
+        "Endpoint returns correct artifact content for valid stage",
+        "Returns 404 with clear message if artifact not found",
+        "Supports all numbered artifact file conventions"
+      ],
+      "dependencies": ["BC-01-C1"],
+      "labels": ["backend", "data-layer"],
+      "assumptions": ["Artifact files follow NN-name.md naming convention"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "S", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-01-C3",
+      "title": "Agent config reader: parse odinclaw.config.yaml for agent model assignments and team structure",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-01",
+      "outcome": "API can serve agent metadata (model, team membership, role) to frontend.",
+      "scope": [
+        "Parse odinclaw.config.yaml on startup",
+        "Derive Design team (Loki's agents) and Build team (Thor's agents) from config",
+        "GET /api/agents endpoint returning agent list with model, team, status"
+      ],
+      "non_goals": ["Writing config", "Live config reload"],
+      "acceptance_criteria": [
+        "All agents from config are returned with correct model assignments",
+        "Agents are grouped into design_team and build_team",
+        "Agent status (idle/working/blocked) is derived from active runs"
+      ],
+      "dependencies": ["BC-01-C1"],
+      "labels": ["backend", "data-layer"],
+      "assumptions": ["Config structure is stable; agents section contains model/provider fields"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "S", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-01-C4",
+      "title": "Limits snapshot: serve API/Copilot rate limit data from local snapshot file",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-01",
+      "outcome": "Frontend can display remaining API limits without live external polling.",
+      "scope": [
+        "Read limits snapshot file (e.g. data/limits-snapshot.json)",
+        "GET /api/limits endpoint",
+        "Schema: claudeRemaining, claudeResetAt, copilotRemaining, copilotResetAt, updatedAt"
+      ],
+      "non_goals": ["Live polling of external APIs", "Writing limits data from this endpoint"],
+      "acceptance_criteria": [
+        "Endpoint returns limits data if snapshot exists",
+        "Returns defaults/null values if snapshot missing",
+        "Includes updatedAt timestamp so frontend can show staleness"
+      ],
+      "dependencies": [],
+      "labels": ["backend", "limits"],
+      "assumptions": ["Limits snapshot is written by a separate process or manually; this API only reads it"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "S", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-02-C1",
+      "title": "Zustand store: polling loop and global state slices for pipeline data",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-02",
+      "outcome": "All views share a single reactive data store refreshed every 10 seconds.",
+      "scope": [
+        "Zustand store with slices: projects, agents, limits",
+        "10-second polling interval with AbortController cleanup",
+        "Loading and error states per slice",
+        "Derived selectors: activeJobs, backlogJobs, completedJobs, agentStatus"
+      ],
+      "non_goals": ["Per-view polling", "WebSocket/SSE"],
+      "acceptance_criteria": [
+        "Store refreshes every 10 seconds",
+        "All views subscribe to shared store without their own fetches",
+        "Polling stops cleanly on unmount",
+        "Stale data indicator visible when last refresh > 30s ago"
+      ],
+      "dependencies": ["BC-01-C1", "BC-01-C3", "BC-01-C4"],
+      "labels": ["frontend", "state-management"],
+      "assumptions": ["10-second polling is acceptable latency for pipeline monitoring"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-03-C1",
+      "title": "Dashboard Home: active job hero card with real-time stage indicator",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-03",
+      "outcome": "User sees the most recent active job prominently with its current stage and agent.",
+      "scope": [
+        "HeroCard component showing job title, issue number, project",
+        "Current stage indicator (stage name, agent avatar, duration)",
+        "Pulsing glow animation when actively processing",
+        "Links to full job detail"
+      ],
+      "non_goals": ["Multiple hero cards", "Editing jobs from hero card"],
+      "acceptance_criteria": [
+        "Most recently updated active job is shown",
+        "Current stage and active agent avatar are visible",
+        "Pulsing animation is present when status=in_progress",
+        "If no active jobs, shows empty state"
+      ],
+      "dependencies": ["BC-02-C1", "CC-01-C1"],
+      "labels": ["frontend", "home-view"],
+      "assumptions": ["Active job is determined by most recent run with status=in_progress"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-03-C2",
+      "title": "Dashboard Home: Design and Build agent team panels",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-03",
+      "outcome": "User can see all agents in both teams with their current status at a glance.",
+      "scope": [
+        "Two-column panel layout: Design Team | Build Team",
+        "AgentCard per agent: avatar, name, model badge, status pill (idle/working/blocked)",
+        "Active job name shown when agent is working",
+        "Mobile: horizontal scroll within each panel"
+      ],
+      "non_goals": ["Clicking agent to drill into agent history"],
+      "acceptance_criteria": [
+        "Both teams visible side-by-side on desktop",
+        "Agent status derived correctly from active run stages",
+        "Model badge shows configured model (e.g. sonnet-4.6)",
+        "Mobile shows panels stacked with horizontal agent scroll"
+      ],
+      "dependencies": ["BC-02-C1", "BC-01-C3", "CC-01-C1"],
+      "labels": ["frontend", "home-view"],
+      "assumptions": ["Agent status idle/working/blocked is derivable from execution-log active stage"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-03-C3",
+      "title": "Dashboard Home: pipeline flow bar and cost summary header",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-03",
+      "outcome": "User sees high-level pipeline throughput and cost/limits at all times.",
+      "scope": [
+        "Pipeline flow bar: Backlog → Design Phase → Build Phase → Complete with job counts",
+        "Sticky cost/limits header: premium requests today/week, Claude remaining, Copilot remaining, estimated cost",
+        "Progress bars for limit usage"
+      ],
+      "non_goals": ["Detailed analytics (belongs in Analytics view)"],
+      "acceptance_criteria": [
+        "Job counts in each pipeline phase are accurate",
+        "Cost header shows estimated total cost to date",
+        "Limit bars show % used vs total",
+        "Header is sticky/visible on scroll"
+      ],
+      "dependencies": ["BC-02-C1", "BC-01-C4", "CC-01-C1"],
+      "labels": ["frontend", "home-view"],
+      "assumptions": ["Premium request cost is $0.10 each"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-04-C1",
+      "title": "Backlog view: scrollable queued jobs list with expandable markdown",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-04",
+      "outcome": "User can browse all queued jobs and read their full request markdown inline.",
+      "scope": [
+        "Filter runs where status=backlog",
+        "Card list: title, issue number, date created, project",
+        "Click to expand inline rendered markdown (react-markdown)",
+        "Pull-to-refresh gesture on mobile"
+      ],
+      "non_goals": ["Editing or reordering backlog items"],
+      "acceptance_criteria": [
+        "All backlog jobs are listed in reverse-chronological order",
+        "Expanding a card shows rendered 00-request.md",
+        "Pull-to-refresh triggers store re-poll on mobile",
+        "Empty state shown when backlog is empty"
+      ],
+      "dependencies": ["BC-02-C1", "BC-01-C2", "CC-01-C1"],
+      "labels": ["frontend", "backlog-view"],
+      "assumptions": ["Backlog status is determined by state.yaml status field"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-05-C1",
+      "title": "Pipeline view: Design Phase horizontal stage flow with job cards",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-05",
+      "outcome": "User can see all active design-phase jobs positioned at their current stage.",
+      "scope": [
+        "Horizontal scrollable stage flow: Architecture → UX Design → System Map → Capability Slicing → Discovery → Issues → Issue Refinement → Planning QA",
+        "Job cards at each stage: title, issue#, project, agent avatar, duration, running cost",
+        "Pulsing glow on actively-processing cards",
+        "Animated card transition between stages on data refresh"
+      ],
+      "non_goals": ["Manual drag-and-drop of cards"],
+      "acceptance_criteria": [
+        "All design-phase active runs appear at correct stage",
+        "Stage flow is horizontally scrollable on mobile",
+        "Active cards pulse visually",
+        "Cost shows sum of premiumRequests × $0.10 so far"
+      ],
+      "dependencies": ["BC-02-C1", "CC-01-C1", "CC-01-C2"],
+      "labels": ["frontend", "pipeline-view", "design-phase"],
+      "assumptions": ["Current stage is derivable from execution-log.json last completed entry"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "L", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-05-C2",
+      "title": "Pipeline view: Build Phase horizontal stage flow with job cards",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-05",
+      "outcome": "User can see all active build-phase jobs positioned at their current stage.",
+      "scope": [
+        "Horizontal scrollable stage flow: Foundation → Implementation → Code Review → Adversarial Testing → Integration Testing → Resilience Testing → Release → Recovery",
+        "Same job card anatomy as design phase",
+        "Separate section below design phase with clear visual separator"
+      ],
+      "non_goals": ["Merging design and build flows into one"],
+      "acceptance_criteria": [
+        "All build-phase active runs appear at correct stage",
+        "Section is visually distinct from design phase",
+        "Empty state shown when no active build jobs"
+      ],
+      "dependencies": ["BC-05-C1", "CC-01-C1"],
+      "labels": ["frontend", "pipeline-view", "build-phase"],
+      "assumptions": ["Build phase stages are determined by execution-log stage names matching build team agents"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "L", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-05-C3",
+      "title": "Pipeline view: animated stage transition system with Framer Motion",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-05",
+      "outcome": "Job cards animate smoothly when transitioning between stages on poll refresh.",
+      "scope": [
+        "Framer Motion layoutId for shared card identity across renders",
+        "400ms ease transition",
+        "Respects prefers-reduced-motion",
+        "No layout shift outside the pipeline flow"
+      ],
+      "non_goals": ["Real-time push animations (polling is sufficient)"],
+      "acceptance_criteria": [
+        "Card slides from old stage column to new stage column on refresh",
+        "Animation is disabled when OS reduces motion",
+        "No visual artifacts or position jumps during transition"
+      ],
+      "dependencies": ["BC-05-C1", "BC-05-C2"],
+      "labels": ["frontend", "animation"],
+      "assumptions": ["Framer Motion layoutId approach is used per UX spec"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-06-C1",
+      "title": "Completed view: jobs list with summary metrics and success/fail badges",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-06",
+      "outcome": "User can browse all finished jobs with high-level cost and duration metrics.",
+      "scope": [
+        "Filter runs where status=complete or status=failed",
+        "Card: title, project, completion date, total duration, total cost, total tokens, success/fail badge",
+        "Sort by completion date descending"
+      ],
+      "non_goals": ["Editing completed jobs"],
+      "acceptance_criteria": [
+        "All completed/failed runs are listed",
+        "Total cost = sum(premiumRequests × $0.10) across all stages",
+        "Total duration = sum of stage durations",
+        "Success/fail badge matches run status"
+      ],
+      "dependencies": ["BC-02-C1", "CC-01-C1"],
+      "labels": ["frontend", "completed-view"],
+      "assumptions": ["Duration data is available in execution-log.json per stage"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-06-C2",
+      "title": "Completed view: full job detail overlay with two-column stage breakdown",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-06",
+      "outcome": "User can drill into any completed job and see full stage-by-stage breakdown with rendered artifacts.",
+      "scope": [
+        "Full-screen overlay/modal on card click",
+        "Two columns: Design stages (left) | Build stages (right)",
+        "Each stage: expandable accordion with agent avatar, model, duration, premiumRequests, cost, tokens",
+        "Rendered artifact markdown (react-markdown + syntax highlighting)",
+        "Summary row: totals"
+      ],
+      "non_goals": ["Editing artifact content"],
+      "acceptance_criteria": [
+        "Overlay opens on card click with close button",
+        "Both columns populated correctly from execution-log.json",
+        "Accordion sections expand to show artifact markdown",
+        "Summary row shows correct totals",
+        "Mobile: tabs instead of columns"
+      ],
+      "dependencies": ["BC-06-C1", "BC-01-C2"],
+      "labels": ["frontend", "completed-view"],
+      "assumptions": ["Artifact markdown is fetchable via BC-01-C2 endpoint"],
+      "split_rationale": "Overlay is complex enough to be separate from the list",
+      "size_assessment": { "tshirt": "L", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-07-C1",
+      "title": "Analytics: cost dashboard with time-series and breakdown charts",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-07",
+      "outcome": "User can understand cost trends over time and which agents/projects drive spending.",
+      "scope": [
+        "Daily/weekly/monthly premium request consumption chart (recharts LineChart/BarChart)",
+        "Cost per project bar chart",
+        "Cost per agent bar chart",
+        "Cost per model tier (Opus/Sonnet/Haiku) breakdown"
+      ],
+      "non_goals": ["Cost forecasting", "Budget alerts"],
+      "acceptance_criteria": [
+        "Charts render correctly with real execution-log data",
+        "Time granularity can be switched (daily/weekly/monthly)",
+        "Empty state shown if no data available"
+      ],
+      "dependencies": ["BC-02-C1", "CC-01-C1"],
+      "labels": ["frontend", "analytics-view"],
+      "assumptions": ["Timestamps in execution-log.json are ISO8601"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "L", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-07-C2",
+      "title": "Analytics: performance dashboard (agent stage durations, success rates)",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-07",
+      "outcome": "User can identify slow agents, failure patterns, and Design vs Build phase timing.",
+      "scope": [
+        "Average stage duration per agent (bar chart)",
+        "Average job completion time (line/area chart)",
+        "Success/failure/retry rates per agent",
+        "Design phase vs Build phase duration comparison"
+      ],
+      "non_goals": ["Individual run drill-down from analytics (use Completed view)"],
+      "acceptance_criteria": [
+        "All charts populated from execution-log data",
+        "Retry rate shown where retries field is present",
+        "Design vs Build comparison visible as side-by-side bars"
+      ],
+      "dependencies": ["BC-02-C1", "CC-01-C1"],
+      "labels": ["frontend", "analytics-view"],
+      "assumptions": ["execution-log.json may not have retries field — show N/A if absent"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "L", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "BC-07-C3",
+      "title": "Analytics: limits tracker with usage bars and burn rate projection",
+      "classification": "capability",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "BC-07",
+      "outcome": "User can see remaining API limits and whether they will run out before reset.",
+      "scope": [
+        "Claude API: remaining requests, reset time, % used progress bar",
+        "GitHub Copilot: remaining premium requests, reset time, % used progress bar",
+        "Burn rate: requests/day based on recent history, projected days to limit",
+        "Visual warning when projected to exceed limit before reset"
+      ],
+      "non_goals": ["Live external API polling (reads snapshot file)"],
+      "acceptance_criteria": [
+        "Both limit sources shown with progress bars",
+        "Reset time shown in human-readable format",
+        "Burn rate projection shows 'on track' or 'at risk'",
+        "Shows staleness indicator if snapshot is > 1 hour old"
+      ],
+      "dependencies": ["BC-01-C4", "CC-01-C1"],
+      "labels": ["frontend", "analytics-view", "limits"],
+      "assumptions": ["Burn rate calculated from execution-log timestamps over rolling 7-day window"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "CC-01-C1",
+      "title": "Design system: shared component library (tokens, AgentCard, JobCard, StageChip, CostBar)",
+      "classification": "cross_cutting",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "CC-01",
+      "outcome": "All views built from consistent, reusable components with the Valhalla dark theme.",
+      "scope": [
+        "Tailwind config: dark theme tokens (colors, spacing, glow effects)",
+        "AgentCard: avatar, name, model badge, status pill",
+        "JobCard: title, issue#, project, agent, duration, cost, pulse animation",
+        "StageChip: stage name, status indicator",
+        "CostBar: progress bar with labels",
+        "AgentAvatar: maps agent name to correct image from public/img/agents/"
+      ],
+      "non_goals": ["View-level layout components (belong in respective view slices)"],
+      "acceptance_criteria": [
+        "All components render in Storybook or equivalent isolated view",
+        "AgentAvatar correctly maps all 21 agents to their image files",
+        "Dark theme applied consistently",
+        "Pulsing glow animation works on JobCard",
+        "All components are fully typed"
+      ],
+      "dependencies": [],
+      "labels": ["frontend", "design-system"],
+      "assumptions": ["Avatar files exist in public/img/agents/ as confirmed in UX spec; ratatoskr file has known typo ratatoksr.PNG"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "CC-02-C1",
+      "title": "Application shell: routing, navigation, and mobile tab layout",
+      "classification": "cross_cutting",
+      "issue_type": "feature",
+      "level": "child",
+      "parent_id": "CC-02",
+      "outcome": "Users can navigate between all 5 views via desktop sidebar and mobile tab bar.",
+      "scope": [
+        "React Router (or Vite-native) with routes: /, /backlog, /pipeline, /completed, /analytics",
+        "Desktop: left sidebar navigation with icons",
+        "Mobile: bottom tab bar",
+        "Active route highlighted",
+        "Page transitions (fade)"
+      ],
+      "non_goals": ["Authentication", "Deep-linking to specific jobs (can be added later)"],
+      "acceptance_criteria": [
+        "All 5 routes resolve to correct view components",
+        "Nav highlights active route",
+        "Mobile tab bar is visible and functional",
+        "Page transition is smooth on navigation"
+      ],
+      "dependencies": ["CC-01-C1"],
+      "labels": ["frontend", "shell", "navigation"],
+      "assumptions": ["No authentication required for MVP"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "M", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "INT-01-C1",
+      "title": "API–Frontend contract: shared TypeScript types and OpenAPI-style schema",
+      "classification": "integration",
+      "issue_type": "integration",
+      "level": "child",
+      "parent_id": "INT-01",
+      "outcome": "Frontend and backend share a single source of truth for all API response shapes.",
+      "scope": [
+        "src/types/api.ts defining: Project, Run, Stage, Agent, LimitsSnapshot, CostSummary",
+        "Backend serialises responses to match these types",
+        "Frontend normaliser validates/transforms API responses to store types"
+      ],
+      "non_goals": ["Code generation from schema", "Runtime validation library (manual types are sufficient for MVP)"],
+      "acceptance_criteria": [
+        "All API response shapes defined in shared types",
+        "Backend and frontend import from same types file",
+        "No shape mismatches between API response and frontend store"
+      ],
+      "dependencies": ["BC-01-C1", "BC-01-C3", "BC-01-C4"],
+      "labels": ["integration", "types"],
+      "assumptions": ["Monorepo or co-located frontend/backend so types can be shared directly"],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "S", "is_too_large": false, "reasons": [] }
+    },
+    {
+      "id": "DISC-01-C1",
+      "title": "Discovery: confirm state.yaml schema, execution-log.json schema, and stage-to-phase mapping",
+      "classification": "discovery_needed",
+      "issue_type": "discovery",
+      "level": "child",
+      "parent_id": "DISC-01",
+      "outcome": "All data model unknowns are resolved before BC-01 and INT-01 implementation begins.",
+      "scope": [
+        "Enumerate all status values used in state.yaml across existing projects",
+        "Confirm execution-log.json schema: field names, nullability, stage name conventions",
+        "Determine how design phases vs build phases are identified from stage names",
+        "Confirm premiumRequests field: always present, fractional values, null handling",
+        "Check if 40-build/ directory convention is used or if artifacts are always single files"
+      ],
+      "non_goals": ["Changing the data format", "Back-filling missing data"],
+      "acceptance_criteria": [
+        "Documented enumeration of all status values",
+        "Annotated execution-log.json schema with field types and nullability",
+        "Decision on design/build phase derivation strategy",
+        "Confirmation of premiumRequests value semantics"
+      ],
+      "dependencies": [],
+      "labels": ["discovery", "data-model"],
+      "assumptions": [],
+      "split_rationale": "",
+      "size_assessment": { "tshirt": "S", "is_too_large": false, "reasons": [] }
+    }
+  ]
+}

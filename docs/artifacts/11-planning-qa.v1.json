@@ -1,0 +1,140 @@
+{
+  "verdict": "NEEDS_WORK",
+  "summary": "Issue backlog is well-structured with strong coverage of all views and bounded contexts. Critical issues found: (1) Circular dependency between INT-01-C1 and BC-01-C1, (2) Sequencing error with INT-01-C1 before BC-01-C1, (3) 5 issues have >2 blocking dependencies violating size rules, (4) Missing implementation concerns (caching, error boundaries, loading states) that architecture considers critical, (5) Split recommendations from Sleipnir not yet applied. Once these are resolved, backlog will be delivery-ready.",
+  "issues_reviewed": 21,
+  "findings": [
+    {
+      "type": "DEPENDENCY_GAP",
+      "severity": "BLOCKING",
+      "affected_ids": [
+        "INT-01-C1",
+        "BC-01-C1"
+      ],
+      "description": "Circular dependency: INT-01-C1 depends on BC-01-C1, but BC-01-C1 also depends on INT-01-C1. This creates a deadlock where neither can start.",
+      "recommendation": "Remove BC-01-C1 from INT-01-C1's dependencies. INT-01-C1 should be a pure type definition issue that can be drafted independently based on DISC-01-C1 findings. BC-01-C1 then implements against those types. The contract (types) should not depend on the implementation."
+    },
+    {
+      "type": "SEQUENCING",
+      "severity": "BLOCKING",
+      "affected_ids": [
+        "INT-01-C1",
+        "BC-01-C1"
+      ],
+      "description": "Delivery order places INT-01-C1 (position 3) before BC-01-C1 (position 4), but INT-01-C1 lists BC-01-C1 as a dependency. This violates the delivery sequence.",
+      "recommendation": "After removing the circular dependency (see above), the current sequencing will be correct: INT-01-C1 should complete before BC-01-C1 starts."
+    },
+    {
+      "type": "DEPENDENCY_GAP",
+      "severity": "WARNING",
+      "affected_ids": [
+        "BC-02-C1",
+        "BC-03-C2",
+        "BC-03-C3",
+        "BC-04-C1",
+        "BC-05-C1"
+      ],
+      "description": "5 issues have >2 blocking dependencies, violating the decomposition rule 'Max 2 blocking dependencies'. BC-02-C1 has 3 deps (BC-01-C1, BC-01-C3, BC-01-C4). BC-03-C2, BC-03-C3, BC-04-C1, and BC-05-C1 each have 3 dependencies.",
+      "recommendation": "For most of these, the third dependency is CC-01-C1 (design system). Consider whether CC-01-C1 is truly a blocking dependency or just a useful prerequisite. If the design system can be incrementally built, frontend views could start in parallel with CC-01-C1. Alternatively, accept this as pragmatic—all frontend work naturally depends on design system + store + API, so 3 deps may be acceptable for integration issues."
+    },
+    {
+      "type": "GAP",
+      "severity": "WARNING",
+      "affected_ids": [],
+      "description": "Missing explicit issues for critical cross-cutting concerns mentioned in architecture: (1) API response caching with 10s TTL (architecture §BC-01), (2) Error boundaries and error handling strategy (NFRs mention graceful degradation), (3) Global loading states wired to Zustand store, (4) AgentAvatar component with typo filename handling (ratatoksr.PNG), (5) Router/routing implementation beyond just 'navigation'.",
+      "recommendation": "These concerns may be implicit within existing issues (e.g., caching in BC-01-C1, error handling in CC-02-C1, AgentAvatar in CC-01-C1), but they are not called out explicitly in acceptance criteria. Add specific ACs to relevant issues: BC-01-C1 should mention caching strategy, CC-02-C1 should mention error boundary, CC-01-C1 should list AgentAvatar with specific filename note. Or create small tasks: 'BC-01-C5: API caching layer', 'CC-02-C2: Error boundary and loading states'."
+    },
+    {
+      "type": "OVERSIZED",
+      "severity": "WARNING",
+      "affected_ids": [
+        "BC-06-C2",
+        "BC-07-C1"
+      ],
+      "description": "Sleipnir's split assessment identified 2 L-sized issues requiring decomposition: BC-06-C2 (desktop vs mobile layout split) and BC-07-C1 (time-series vs breakdown charts split). Split recommendations have not been applied to the backlog.",
+      "recommendation": "Apply Sleipnir's recommended splits: Replace BC-06-C2 with BC-06-C2a (desktop overlay) and BC-06-C2b (mobile tabs). Replace BC-07-C1 with BC-07-C1a (time-series chart) and BC-07-C1b (breakdown charts). Update delivery order and dependencies accordingly. This will bring all issues to M or smaller."
+    },
+    {
+      "type": "VAGUE_AC",
+      "severity": "INFO",
+      "affected_ids": [
+        "BC-05-C3"
+      ],
+      "description": "BC-05-C3 (animated stage transitions) has vague acceptance criteria. 'Pulsing animation for active stage' and 'fade-in animation for newly completed stages' are not specific about duration, easing, or visual design.",
+      "recommendation": "Add specific animation parameters to ACs: duration (e.g., 1.5s pulse cycle), easing function (e.g., ease-in-out), opacity ranges (e.g., 0.7-1.0 for pulse). Reference Framer Motion variant conventions from CC-01-C1. Alternatively, defer animation specifics to implementation and just verify 'visibly animates' as AC."
+    },
+    {
+      "type": "GAP",
+      "severity": "INFO",
+      "affected_ids": [],
+      "description": "Architecture mentions 'manual refresh button on all views' as mitigation for 10s polling staleness (AD-02), but no issue explicitly covers this UI element.",
+      "recommendation": "Add AC to BC-02-C1 or CC-02-C1: 'Manual refresh button triggers immediate poll and updates all store slices'. Or accept as implicit in each view implementation."
+    },
+    {
+      "type": "INFO",
+      "severity": "INFO",
+      "affected_ids": [
+        "DISC-01-C1"
+      ],
+      "description": "DISC-01-C1 has null 'type' field. All other issues are also null for 'type'. Per decomposition rules, issues should have mandatory classification: bounded_context, capability, cross_cutting, integration, discovery_needed.",
+      "recommendation": "Populate 'type' field for all issues. DISC-01-C1 should be 'discovery_needed'. BC-* issues should be 'bounded_context'. CC-* should be 'cross_cutting'. INT-01-C1 should be 'integration'."
+    },
+    {
+      "type": "INFO",
+      "severity": "INFO",
+      "affected_ids": [
+        "DISC-01-C1",
+        "CC-01-C1",
+        "BC-01-C1",
+        "BC-01-C2",
+        "BC-01-C3",
+        "BC-01-C4",
+        "BC-03-C2",
+        "BC-03-C3",
+        "BC-04-C1",
+        "BC-06-C2",
+        "BC-07-C1",
+        "BC-07-C2",
+        "BC-07-C3"
+      ],
+      "description": "12 issues have 'and' in their titles, which may indicate multiple concerns bundled together. Most are acceptable (e.g., 'routing, navigation, and mobile tab bar' is one cohesive shell concern), but worth reviewing.",
+      "recommendation": "Review each title with 'and': DISC-01-C1 bundles 3 discovery questions but they are tightly coupled schema questions (acceptable). BC-03-C2 'Design and Build agent team panels' is two panels but same pattern (acceptable). BC-03-C3 'pipeline flow bar and sticky cost/limits header' may be two separate components—consider splitting if cost header is complex. Most others are acceptable."
+    }
+  ],
+  "dependency_graph_valid": false,
+  "sequencing_valid": false,
+  "handoff_conditions": [
+    "MUST: Resolve circular dependency between INT-01-C1 and BC-01-C1",
+    "MUST: Apply Sleipnir's split recommendations for BC-06-C2 and BC-07-C1",
+    "SHOULD: Reduce >2-dependency issues or document exception rationale",
+    "SHOULD: Add explicit ACs for caching, error boundaries, loading states",
+    "NICE-TO-HAVE: Populate 'type' field for all issues per decomposition rules",
+    "NICE-TO-HAVE: Add animation specifics to BC-05-C3 ACs"
+  ],
+  "recommended_first_sprint": [
+    "DISC-01-C1",
+    "INT-01-C1",
+    "CC-01-C1",
+    "BC-01-C1",
+    "BC-01-C2",
+    "BC-01-C3",
+    "BC-01-C4",
+    "CC-02-C1"
+  ],
+  "quality_score": {
+    "clarity": 4,
+    "size_control": 3,
+    "dependency_health": 2,
+    "scope_control": 4,
+    "overall": 3
+  },
+  "notes": [
+    "Overall backlog structure is strong. All 7 bounded contexts plus cross-cutting and integration concerns are represented.",
+    "Acceptance criteria are clear and testable. No major vagueness detected beyond animation parameters.",
+    "Discovery issue (DISC-01-C1) correctly gates all implementation work and has clear exit criteria.",
+    "Design system (CC-01-C1) and application shell (CC-02-C1) are properly sequenced early.",
+    "View decomposition follows capability slicing well—each view has list + detail + specialized concerns.",
+    "The 2 blocking issues (circular dep + sequencing) are straightforward to fix and do not require backlog redesign.",
+    "Split recommendations from Sleipnir are valid and should be applied to achieve uniform M-or-smaller sizing.",
+    "Once blocking issues resolved and splits applied, recommend READY verdict for Thor handoff."
+  ]
+}
