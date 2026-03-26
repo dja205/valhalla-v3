@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { listProjects, readProjectDetail, readRunDetail, readArtifactFile, listArtifacts } from '../lib/fsReader';
+import { listProjects, readProjectDetail, readRunDetail, readArtifactFile, listArtifacts, readLimitsSnapshot } from '../lib/fsReader';
 import { parseConfig } from '../lib/configParser';
-import type { DashboardData, LimitsSnapshot } from '../../src/types/api';
+import type { DashboardData } from '../../src/types/api';
 
 const router = Router();
 
 // GET /api/projects - List all projects
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
   try {
     const projects = await listProjects();
     res.json(projects);
@@ -55,7 +55,7 @@ router.get('/:id/runs/:runId/artifacts', async (req, res) => {
   }
 });
 
-// GET /api/projects/:id/runs/:runId/artifacts/:stage - Get artifact content
+// GET /api/projects/:id/runs/:runId/artifacts/:stage - Get artifact content (legacy path)
 router.get('/:id/runs/:runId/artifacts/:stage', async (req, res) => {
   try {
     const content = await readArtifactFile(req.params.id, req.params.runId, req.params.stage);
@@ -69,12 +69,27 @@ router.get('/:id/runs/:runId/artifacts/:stage', async (req, res) => {
   }
 });
 
-// GET /api/dashboard - Single endpoint for all dashboard data
-router.get('/dashboard', async (_, res) => {
+// GET /api/projects/:id/runs/:runId/stages/:stage/artifact - Get artifact (spec path)
+router.get('/:id/runs/:runId/stages/:stage/artifact', async (req, res) => {
   try {
-    const [projects, config] = await Promise.all([
+    const content = await readArtifactFile(req.params.id, req.params.runId, req.params.stage);
+    if (content === null) {
+      return res.status(404).json({ error: 'Artifact not found' });
+    }
+    res.json({ content });
+  } catch (error) {
+    console.error('Error reading artifact:', error);
+    res.status(404).json({ error: 'Artifact not found' });
+  }
+});
+
+// GET /api/dashboard - Single endpoint for all dashboard data
+router.get('/dashboard', async (_req, res) => {
+  try {
+    const [projects, config, limits] = await Promise.all([
       listProjects(),
       parseConfig(),
+      readLimitsSnapshot(),
     ]);
     
     // Find active run
@@ -82,7 +97,6 @@ router.get('/dashboard', async (_, res) => {
     const completedRuns = [];
     
     for (const project of projects) {
-      // Active run: project.status === 'active' and has current_run
       if (project.status === 'active' && project.currentRun) {
         const runDetail = await readRunDetail(project.projectId, project.currentRun);
         if (runDetail) {
@@ -90,7 +104,6 @@ router.get('/dashboard', async (_, res) => {
         }
       }
       
-      // Completed runs: all runs where status === 'completed'
       for (const run of project.runs) {
         if (run.status === 'completed') {
           const runDetail = await readRunDetail(project.projectId, run.runId);
@@ -105,13 +118,6 @@ router.get('/dashboard', async (_, res) => {
     completedRuns.sort((a, b) => 
       new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
     );
-    
-    // Default limits (no real limit data exists yet)
-    const limits: LimitsSnapshot = {
-      claude: { used: 0, limit: 1000, resetAt: null },
-      copilot: { used: 0, limit: 300, resetAt: null },
-      lastUpdated: new Date().toISOString(),
-    };
     
     const dashboard: DashboardData = {
       projects,

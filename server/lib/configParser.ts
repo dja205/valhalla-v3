@@ -1,14 +1,17 @@
 import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'js-yaml';
+import { cache } from './cache';
 import type { AgentInfo, AgentConfigResponse } from '../../src/types/api';
 
 // Hardcoded team arrays (matching src/lib/agentMap.ts)
-const DESIGN_TEAM = ['loki', 'mimir', 'baldr', 'ratatoskr', 'sleipnir', 'freya', 'brokk', 'sindri', 'heimdall'];
-const BUILD_TEAM = ['thor', 'ymir', 'modi', 'magni', 'tyr', 'valkyrie', 'jormungandr', 'fenrir', 'surtr', 'hel'];
+const DESIGN_TEAM = ['mimir', 'baldr', 'ratatoskr', 'sleipnir', 'freya', 'brokk', 'sindri', 'heimdall'];
+const BUILD_TEAM = ['ymir', 'modi', 'magni', 'tyr', 'valkyrie', 'jormungandr', 'fenrir', 'surtr', 'hel'];
 
 const CONFIG_PATH = process.env.CONFIG_PATH || 
   path.join(process.env.HOME || '~', '.openclaw/workspace/odinclaw/odinclaw.config.yaml');
+
+const CACHE_TTL = 30000; // 30 seconds for config
 
 interface OdinclawConfig {
   agents?: Record<string, {
@@ -20,6 +23,10 @@ interface OdinclawConfig {
 }
 
 export async function parseConfig(): Promise<AgentConfigResponse> {
+  const cacheKey = 'config';
+  const cached = cache.get<AgentConfigResponse>(cacheKey);
+  if (cached) return cached;
+
   try {
     const content = await fs.readFile(CONFIG_PATH, 'utf-8');
     const config = yaml.load(content) as OdinclawConfig;
@@ -29,10 +36,10 @@ export async function parseConfig(): Promise<AgentConfigResponse> {
     if (config.agents) {
       for (const [agentName, agentConfig] of Object.entries(config.agents)) {
         const team = DESIGN_TEAM.includes(agentName) 
-          ? 'design' 
+          ? 'design' as const
           : BUILD_TEAM.includes(agentName) 
-            ? 'build' 
-            : 'cross-cutting';
+            ? 'build' as const
+            : 'cross-cutting' as const;
         
         agents.push({
           name: agentName,
@@ -46,7 +53,7 @@ export async function parseConfig(): Promise<AgentConfigResponse> {
     // Ensure all team members are represented even if not in config
     for (const agentName of [...DESIGN_TEAM, ...BUILD_TEAM]) {
       if (!agents.find(a => a.name === agentName)) {
-        const team = DESIGN_TEAM.includes(agentName) ? 'design' : 'build';
+        const team = DESIGN_TEAM.includes(agentName) ? 'design' as const : 'build' as const;
         agents.push({
           name: agentName,
           model: 'claude-sonnet-4',
@@ -56,15 +63,18 @@ export async function parseConfig(): Promise<AgentConfigResponse> {
       }
     }
     
-    return {
+    const result: AgentConfigResponse = {
       agents,
       designTeam: DESIGN_TEAM,
       buildTeam: BUILD_TEAM,
     };
+
+    cache.set(cacheKey, result, CACHE_TTL);
+    return result;
   } catch (error) {
     console.error('Error parsing config:', error);
     // Return defaults
-    return {
+    const result: AgentConfigResponse = {
       agents: [...DESIGN_TEAM, ...BUILD_TEAM].map(name => ({
         name,
         model: 'claude-sonnet-4',
@@ -74,5 +84,7 @@ export async function parseConfig(): Promise<AgentConfigResponse> {
       designTeam: DESIGN_TEAM,
       buildTeam: BUILD_TEAM,
     };
+    cache.set(cacheKey, result, CACHE_TTL);
+    return result;
   }
 }

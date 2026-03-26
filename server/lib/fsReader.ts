@@ -1,10 +1,16 @@
 import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'js-yaml';
-import type { ProjectSummary, RunSummary, RunDetail, RunStageEntry } from '../../src/types/api';
+import { cache } from './cache';
+import type { ProjectSummary, RunSummary, RunDetail, RunStageEntry, LimitsSnapshot } from '../../src/types/api';
 
 const PORTFOLIO_PATH = process.env.PORTFOLIO_PATH || 
   path.join(process.env.HOME || '~', '.openclaw/workspace/odinclaw/portfolio/projects');
+
+const LIMITS_FILE = process.env.LIMITS_FILE || 
+  path.join(process.env.HOME || '~', '.openclaw/workspace/odinclaw/data/limits-snapshot.json');
+
+const CACHE_TTL = 10000; // 10 seconds
 
 interface StateYaml {
   project_id: string;
@@ -24,6 +30,10 @@ interface StateYaml {
 }
 
 export async function listProjects(): Promise<ProjectSummary[]> {
+  const cacheKey = 'projects';
+  const cached = cache.get<ProjectSummary[]>(cacheKey);
+  if (cached) return cached;
+
   try {
     const dirs = await fs.readdir(PORTFOLIO_PATH);
     const projects: ProjectSummary[] = [];
@@ -55,12 +65,13 @@ export async function listProjects(): Promise<ProjectSummary[]> {
             lastUpdated: stat.mtime.toISOString(),
             runs,
           });
-        } catch (err) {
+        } catch {
           // Skip projects without valid state.yaml
         }
       }
     }
     
+    cache.set(cacheKey, projects, CACHE_TTL);
     return projects;
   } catch (error) {
     console.error('Error listing projects:', error);
@@ -69,6 +80,10 @@ export async function listProjects(): Promise<ProjectSummary[]> {
 }
 
 export async function readProjectDetail(projectId: string): Promise<ProjectSummary | null> {
+  const cacheKey = `project:${projectId}`;
+  const cached = cache.get<ProjectSummary>(cacheKey);
+  if (cached) return cached;
+
   try {
     const statePath = path.join(PORTFOLIO_PATH, projectId, 'state.yaml');
     const stateContent = await fs.readFile(statePath, 'utf-8');
@@ -84,7 +99,7 @@ export async function readProjectDetail(projectId: string): Promise<ProjectSumma
       lastUpdated: r.last_updated,
     }));
     
-    return {
+    const result: ProjectSummary = {
       projectId: state.project_id || projectId,
       description: state.description || '',
       status: (state.status as ProjectSummary['status']) || 'completed',
@@ -92,6 +107,9 @@ export async function readProjectDetail(projectId: string): Promise<ProjectSumma
       lastUpdated: stat.mtime.toISOString(),
       runs,
     };
+
+    cache.set(cacheKey, result, CACHE_TTL);
+    return result;
   } catch (error) {
     console.error('Error reading project:', error);
     return null;
@@ -110,11 +128,15 @@ export async function readStateYaml(projectId: string): Promise<StateYaml | null
 }
 
 export async function readExecutionLog(projectId: string, runId: string): Promise<RunStageEntry[]> {
+  const cacheKey = `execlog:${projectId}:${runId}`;
+  const cached = cache.get<RunStageEntry[]>(cacheKey);
+  if (cached) return cached;
+
   try {
-    // execution-log.json is a JSON array (not YAML!)
     const logPath = path.join(PORTFOLIO_PATH, projectId, 'runs', runId, 'execution-log.json');
     const content = await fs.readFile(logPath, 'utf-8');
     const stages = JSON.parse(content) as RunStageEntry[];
+    cache.set(cacheKey, stages, CACHE_TTL);
     return stages;
   } catch (error) {
     console.error('Error reading execution log:', error);
@@ -123,6 +145,10 @@ export async function readExecutionLog(projectId: string, runId: string): Promis
 }
 
 export async function readRunDetail(projectId: string, runId: string): Promise<RunDetail | null> {
+  const cacheKey = `run:${projectId}:${runId}`;
+  const cached = cache.get<RunDetail>(cacheKey);
+  if (cached) return cached;
+
   try {
     const state = await readStateYaml(projectId);
     if (!state) return null;
@@ -132,14 +158,12 @@ export async function readRunDetail(projectId: string, runId: string): Promise<R
     
     const stages = await readExecutionLog(projectId, runId);
     
-    // Calculate totals from stages
     const totalDurationMs = stages.reduce((sum, s) => sum + (s.durationMs || 0), 0);
     const totalCost = stages.reduce((sum, s) => {
-      // premiumRequests is always null currently, so cost is 0
       return sum + (s.premiumRequests ? s.premiumRequests * 0.10 : 0);
     }, 0);
     
-    return {
+    const result: RunDetail = {
       runId: runMeta.run_id,
       projectId: state.project_id,
       status: runMeta.status,
@@ -152,6 +176,9 @@ export async function readRunDetail(projectId: string, runId: string): Promise<R
       totalCost,
       totalDurationMs,
     };
+
+    cache.set(cacheKey, result, CACHE_TTL);
+    return result;
   } catch (error) {
     console.error('Error reading run detail:', error);
     return null;
@@ -159,11 +186,16 @@ export async function readRunDetail(projectId: string, runId: string): Promise<R
 }
 
 export async function listArtifacts(projectId: string, runId: string): Promise<string[]> {
+  const cacheKey = `artifacts:${projectId}:${runId}`;
+  const cached = cache.get<string[]>(cacheKey);
+  if (cached) return cached;
+
   try {
     const runPath = path.join(PORTFOLIO_PATH, projectId, 'runs', runId);
     const files = await fs.readdir(runPath);
-    // Filter for artifact markdown files (e.g., 00-request.md, 03-architecture.md)
-    return files.filter(f => /^\d{2}-.*\.md$/.test(f));
+    const artifacts = files.filter(f => /^\d{2}-.*\.md$/.test(f));
+    cache.set(cacheKey, artifacts, CACHE_TTL);
+    return artifacts;
   } catch (error) {
     console.error('Error listing artifacts:', error);
     return [];
@@ -175,7 +207,6 @@ export async function readArtifactFile(projectId: string, runId: string, stagePr
     const runPath = path.join(PORTFOLIO_PATH, projectId, 'runs', runId);
     const files = await fs.readdir(runPath);
     
-    // Find file matching the prefix (e.g., '00' matches '00-request.md')
     const matchingFile = files.find(f => f.startsWith(stagePrefix) && f.endsWith('.md'));
     
     if (!matchingFile) {
@@ -188,5 +219,27 @@ export async function readArtifactFile(projectId: string, runId: string, stagePr
   } catch (error) {
     console.error('Error reading artifact:', error);
     return null;
+  }
+}
+
+export async function readLimitsSnapshot(): Promise<LimitsSnapshot> {
+  const cacheKey = 'limits';
+  const cached = cache.get<LimitsSnapshot>(cacheKey);
+  if (cached) return cached;
+
+  const defaults: LimitsSnapshot = {
+    claude: { used: 0, limit: 1000, resetAt: null },
+    copilot: { used: 0, limit: 300, resetAt: null },
+    lastUpdated: new Date().toISOString(),
+  };
+
+  try {
+    const content = await fs.readFile(LIMITS_FILE, 'utf-8');
+    const limits = JSON.parse(content) as LimitsSnapshot;
+    cache.set(cacheKey, limits, 30000); // 30s TTL for limits
+    return limits;
+  } catch {
+    cache.set(cacheKey, defaults, 30000);
+    return defaults;
   }
 }
